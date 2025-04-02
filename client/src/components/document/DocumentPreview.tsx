@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, FileText, BookText, FileSpreadsheet, PresentationIcon, FileImage } from 'lucide-react';
+import { Download, FileText, FileSpreadsheet, PresentationIcon, FileImage } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { lazy, Suspense } from 'react';
 
@@ -109,7 +109,7 @@ export default function DocumentPreview({ type, content, name, docId, error: pro
         <div className="p-2 flex flex-col items-center justify-center">
           <div className="bg-white rounded overflow-hidden shadow-md max-h-[200px] w-full">
             <div className="flex flex-col items-center justify-center h-[200px] bg-gray-100 p-4">
-              <BookText className="w-12 h-12 text-pink-600 mb-2" />
+              <FileText className="w-12 h-12 text-pink-600 mb-2" />
               <p className="text-sm text-gray-600 text-center line-clamp-1">{name || 'PDF Document'}</p>
               <div className="flex flex-wrap justify-center gap-2 mt-3">
                 <Button 
@@ -119,7 +119,7 @@ export default function DocumentPreview({ type, content, name, docId, error: pro
                   className="text-xs flex items-center text-pink-600 hover:text-pink-800 bg-white whitespace-nowrap"
                 >
                   <a href={`/preview/${docId}`} className="px-3 py-1.5">
-                    <BookText className="w-3.5 h-3.5 mr-1" /> View
+                    <FileText className="w-3.5 h-3.5 mr-1" /> View
                   </a>
                 </Button>
                 {docId && (
