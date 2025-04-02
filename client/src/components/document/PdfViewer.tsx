@@ -1,8 +1,8 @@
 
 import React, { useRef, useEffect, useState } from 'react';
-import * as pdfjsLib from '@pdftron/pdfjs-dist';
+import * as pdfjsLib from 'pdfjs-dist';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdn.pdftron.com/pdfjs/3.4.120/build/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface PdfViewerProps {
   content: string;
