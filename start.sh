@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # Make the script executable
@@ -12,4 +13,4 @@ cd client && npm run build
 
 # Start the preview server (serving built files)
 echo "Starting preview server..."
-npm run preview
+npm run preview -- --port 3001
