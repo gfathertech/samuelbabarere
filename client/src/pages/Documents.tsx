@@ -14,7 +14,7 @@ import {
   Archive, 
   File, 
   Calendar,
-  BookText,
+  BookOpen,
   Code,
   FileJson,
   FileSpreadsheet,
@@ -74,7 +74,7 @@ function getFileIcon(fileType: string, size: number = 16) {
   if (fileType.startsWith('image/')) {
     return <Image className={iconClass} />;
   } else if (fileType.includes('pdf')) {
-    return <BookText className={iconClass} />;
+    return <BookOpen className={iconClass} />;
   } else if (fileType.includes('json') || fileType.includes('application/json')) {
     return <FileJson className={iconClass} />;
   } else if (
@@ -322,7 +322,7 @@ function DocumentPreviewContent({ doc }: { doc: Document }) {
       <div className="p-2 flex flex-col items-center justify-center">
         <div className="bg-white rounded overflow-hidden shadow-md max-h-[200px] w-full">
           <div className="flex flex-col items-center justify-center h-[200px] bg-gray-100 p-4">
-            <BookText className="w-12 h-12 text-pink-600 mb-2" />
+            <BookOpen className="w-12 h-12 text-pink-600 mb-2" />
             <p className="text-sm text-gray-600">PDF Document</p>
             <div className="flex gap-2 mt-3">
               <a 

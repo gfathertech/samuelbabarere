@@ -15,8 +15,13 @@ export default defineConfig({
   ],
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 3000,
     strictPort: true,
+    hmr: false, // Completely disable HMR to avoid WebSocket issues in Replit
+    watch: {
+      usePolling: true,
+      interval: 1000
+    },
     proxy: {
       '/api': {
         target: 'https://efficient-freida-samuel-gfather-42709cdd.koyeb.app',

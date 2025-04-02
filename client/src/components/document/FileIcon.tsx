@@ -1,6 +1,6 @@
 import { 
   FileText, Image, Archive, File, FileVideo, 
-  FileAudio, PresentationIcon, FileJson, Code, FileSpreadsheet 
+  FileAudio, PresentationIcon, FileJson, Code, FileSpreadsheet, BookOpen
 } from 'lucide-react';
 
 interface FileIconProps {
@@ -18,7 +18,7 @@ export function FileIcon({ fileType, size = 16 }: FileIconProps) {
   } else if (fileType.includes('document') || fileType.includes('docx')) {
     return <FileText className={iconClass} />;
   } else if (fileType.includes('pdf')) {
-    return <BookText className={iconClass} />;
+    return <BookOpen className={iconClass} />;
   } else if (fileType.startsWith('image/')) {
     return <Image className={iconClass} />;
   } else if (fileType.includes('json') || fileType.includes('application/json')) {
