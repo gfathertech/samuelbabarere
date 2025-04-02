@@ -1,5 +1,5 @@
 import { 
-  FileText, Image, BookText, Archive, File, FileVideo, 
+  FileText, Image, Archive, File, FileVideo, 
   FileAudio, PresentationIcon, FileJson, Code, FileSpreadsheet 
 } from 'lucide-react';
 
