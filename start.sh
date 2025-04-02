@@ -4,8 +4,12 @@
 chmod +x start.sh
 
 # Kill any existing node processes running Vite
-pkill -f "vite --port 3000" || true
+pkill -f "vite" || true
 
-# Start the frontend only for now
-echo "Starting frontend..."
-cd client && npm run dev
+# Build the application first
+echo "Building the frontend application..."
+cd client && npm run build
+
+# Start the preview server (serving built files)
+echo "Starting preview server..."
+npm run preview
