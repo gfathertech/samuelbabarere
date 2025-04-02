@@ -17,14 +17,9 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     strictPort: true,
-    hmr: {
-      clientPort: process.env.REPLIT_ENVIRONMENT ? 443 : undefined,
-      host: process.env.REPLIT_ENVIRONMENT ? process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co' : undefined,
-      protocol: process.env.REPLIT_ENVIRONMENT ? 'wss' : undefined
-    },
     proxy: {
       '/api': {
-        target: process.env.API_URL || 'http://localhost:5000',
+        target: 'https://efficient-freida-samuel-gfather-42709cdd.koyeb.app',
         changeOrigin: true
       }
     },
