@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Single Page Apps for GitHub Pages</title>
+  <script type="text/javascript">
+    // Single Page Apps for GitHub Pages
+    // MIT License
+    // https://github.com/rafgraph/spa-github-pages
+    // This script takes the current URL and converts the path and query
+    // string into just a query string, and then redirects the browser
+    // to the new URL with only a query string and hash fragment,
+    // e.g. https://www.foo.tld/one/two?a=b&c=d#qwe, becomes
+    // https://www.foo.tld/?/one/two&a=b~and~c=d#qwe
+    // Note: this 404.html file must be at least 512 bytes for it to work
+    // with Internet Explorer (it is currently > 512 bytes)
+
+    // If you're creating a Project Pages site and NOT using a custom domain,
+    // then set segmentCount to 2. This way the root URL will be '/<projectName>'
+    // and not '/', which would be the case for a GitHub User Page.
+    var segmentCount = 1;
+
+    var location = window.location;
+    var l = location.pathname.split('/').slice(0, 1 + segmentCount).join('/') + '/';
+    l = l.replace(/\/$/, ''); // Remove trailing slash
+    
+    // Hardcode the repository name
+    var repo = 'samuelbabarere';
+    var path = '/' + repo + '/?/' + location.pathname.slice(1 + l.length);
+
+    var redirect = location.protocol + '//' + location.hostname + 
+                  (location.port ? ':' + location.port : '') + 
+                  path + (location.search ? '&' + location.search.slice(1) : '') + 
+                  location.hash;
+
+    console.log('Redirecting to:', redirect);
+    sessionStorage.setItem('redirect_path', location.pathname);
+    window.location.replace(redirect);
+  </script>
+</head>
+<body>
+</body>
+</html>

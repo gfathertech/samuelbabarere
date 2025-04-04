@@ -35,8 +35,9 @@ export default function Preview() {
     // Clear localStorage
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('authTimestamp');
-    // Navigate to home
-    navigate('/');
+    // Navigate to home with respect to BASE_URL
+    import { BASE_URL } from "../config";
+    navigate(BASE_URL);
     // Notify user
     toast({
       title: "Logged out",

@@ -1,124 +1,53 @@
-# GitHub Pages Deployment Guide
+# GitHub Pages Deployment
 
-This document provides instructions for deploying the frontend of this application to GitHub Pages using GitHub Actions.
+This project is configured to be deployed to GitHub Pages. It uses a special setup to handle Single Page Application routing with GitHub Pages.
 
-## Prerequisites
+## How it works
 
-- A GitHub account
-- Access to the repository settings
+GitHub Pages doesn't natively support client-side routing used by React Router and similar libraries. When a user tries to access a route directly (e.g., `/documents`), GitHub Pages would return a 404 error. To solve this issue, this project uses the following approach:
 
-## Automated Deployment with GitHub Actions
+1. A custom 404.html page that redirects to the main index.html with a special query parameter
+2. A script in index.html that reads this parameter and rebuilds the correct route
+3. Special configuration for proper base path handling with wouter routing
 
-This project uses GitHub Actions for automated deployment to GitHub Pages. The workflow is already configured in `.github/workflows/deploy-gh-pages.yml`.
+## Base Path Configuration
 
-### How It Works
+In production (on GitHub Pages), the application will be served from `/samuelbabarere/` instead of the root `/`. The following configurations handle this:
 
-1. When code is pushed to the main branch, the workflow automatically builds and deploys the application
-2. The workflow also runs when manually triggered via the GitHub Actions interface
+- **Vite Configuration**: Uses `BASE_PATH` environment variable to set the base path for all assets
+- **Router Configuration**: Configures wouter to work with the base path
+- **API URL Handling**: Ensures API calls work correctly regardless of the environment
 
-### Key Configuration Details
+## Deployment Flow
 
-- **Base Path**: The application is configured to use the repository name as the base path
-- **API URL**: In production, API calls are directed to the Koyeb backend
-- **Build Script**: A special `build:gh-pages` script in package.json handles path configuration
+The deployment to GitHub Pages is handled by the GitHub Actions workflow in `.github/workflows/deploy-gh-pages.yml`. The workflow:
 
-## Configuration Files
+1. Checks out the code
+2. Sets up Node.js
+3. Installs dependencies
+4. Builds the project with the correct base path
+5. Deploys to the gh-pages branch
 
-### 1. GitHub Actions Workflow (`.github/workflows/deploy-gh-pages.yml`)
+## Important Files
 
-```yaml
-name: Deploy to GitHub Pages
+- **public/404.html**: The custom 404 page that handles redirects
+- **public/CNAME**: For custom domain configuration (portfolio.samuelbabarere.net)
+- **public/_redirects**: For Netlify-compatible redirects (if you decide to deploy on Netlify later)
+- **src/config.ts**: Contains environment-aware configuration
+- **vite.config.ts**: Configures the base path for the build
+- **package.json**: Contains the `build:gh-pages` script with the correct base path
 
-on:
-  push:
-    branches: [ main ]  # Set your main branch name
-  workflow_dispatch:    # Allows manual triggering
+## Testing Locally
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout 🛎️
-        uses: actions/checkout@v2
+To test the GitHub Pages setup locally:
 
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v2
-        with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Install dependencies 🔧
-        run: |
-          cd client
-          npm ci
-          
-      - name: Build 🔨
-        run: |
-          cd client
-          GITHUB_REPO_NAME=${{ github.event.repository.name }} npm run build:gh-pages
-        env:
-          VITE_API_URL: 'https://efficient-freida-samuel-gfather-42709cdd.koyeb.app'
-          
-      - name: Deploy 🚀
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          branch: gh-pages
-          folder: client/dist
-          clean: true
+```bash
+npm run build:gh-pages
+npm run preview
 ```
 
-### 2. Vite Configuration (`client/vite.config.ts`)
+This will build the app with the GitHub Pages base path and serve it locally.
 
-The `base` parameter is set to use the repository name as the base path:
+## Custom Domain
 
-```js
-const basePath = process.env.BASE_PATH || '/';
-
-export default defineConfig({
-  // ...
-  base: basePath, // Sets the base path for GitHub Pages
-  // ...
-});
-```
-
-### 3. API URL Configuration (`client/src/config.ts`)
-
-```js
-export const API_URL = import.meta.env.PROD 
-  ? 'https://efficient-freida-samuel-gfather-42709cdd.koyeb.app/api' 
-  : '/api';
-
-export const BASE_URL = import.meta.env.BASE_URL || '/';
-```
-
-### 4. Package.json Build Script
-
-```json
-"scripts": {
-  "build:gh-pages": "BASE_PATH='/${GITHUB_REPO_NAME:-portfolio}/' vite build"
-}
-```
-
-## Setting Up GitHub Pages
-
-1. Go to your repository on GitHub
-2. Navigate to Settings > Pages
-3. Under "Source", select the `gh-pages` branch
-4. Click "Save"
-
-## Verification
-
-After deployment, your site should be available at:
-`https://yourusername.github.io/your-repo-name/`
-
-## Troubleshooting
-
-- **404 Errors**: Check routing and ensure paths include the correct base path
-- **Missing Assets**: Verify that all asset paths include the base path
-- **API Errors**: Ensure the backend URL is correctly configured in `config.ts`
-- **Build Failures**: Check the GitHub Actions logs for error details
-
-## Note About Backend
-
-This deployment only covers the frontend. The backend remains deployed on Koyeb at:
-`https://efficient-freida-samuel-gfather-42709cdd.koyeb.app`
+The project is configured to use `portfolio.samuelbabarere.net` as a custom domain. When this domain is properly set up in DNS and GitHub Pages settings, the site will be accessible via that URL instead of the default GitHub Pages URL.

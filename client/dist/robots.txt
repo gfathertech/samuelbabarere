@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://babarereo.github.io/samuelbabarere/sitemap.xml
