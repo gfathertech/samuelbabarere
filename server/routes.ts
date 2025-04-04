@@ -70,11 +70,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Set auth cookie that expires in 30 minutes
+      // Note: For the GitHub Pages setup, we primarily rely on localStorage auth
+      // as cookies across domains won't work correctly, but we set this for API auth
       res.cookie('auth', 'true', {
         maxAge: 1800000, // 30 minutes in milliseconds
         httpOnly: true,
-        secure: true,
-        sameSite: 'lax' // Changed to 'lax' to allow the cookie to be sent during navigation
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'none' // Allow cross-site cookie access
       });
 
       res.json({ success: true });
@@ -326,12 +328,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const shareToken = await storage.createShareableLink(id, expirationDays);
       
       // Create the full shareable URL
-      const shareUrl = `${req.protocol}://${req.get('host')}/shared/${shareToken}`;
+      // Just return the share token without the full URL to let the frontend construct it with proper BASE_URL
+      // This allows the frontend to build the correct URL depending on the deployment environment
       
       res.json({ 
         success: true, 
-        shareToken, 
-        shareUrl 
+        shareToken 
       });
     } catch (error) {
       console.error("Error creating shareable link:", error);
@@ -375,9 +377,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Found shared document: ${document._id}, expires: ${document.shareExpiration}`);
       
-      // If direct browser access, redirect to shared preview page
+      // If direct browser access, we won't force a client redirect
+      // The browser will be directed via GitHub Pages routing
       if (req.headers.accept?.includes('text/html') && !req.headers['x-requested-with']) {
-        return res.redirect(`/shared/${token}`);
+        // Just return the document data through the API - client rendering will handle the display
+        // No redirection needed as we're using client-side routing
       }
       
       // Convert document data to base64 data URL
@@ -436,9 +440,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ message: "Document data is missing" });
       }
 
-      // If direct browser access, redirect to preview page
+      // If direct browser access, we won't force a client redirect
+      // The browser will be directed via GitHub Pages routing
       if (req.headers.accept?.includes('text/html') && !req.headers['x-requested-with']) {
-        return res.redirect(`/preview/${id}`);
+        // Just return the document data through the API - client rendering will handle the display
+        // No redirection needed as we're using client-side routing
       }
 
       // Convert document data to base64 data URL

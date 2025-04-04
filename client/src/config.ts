@@ -4,6 +4,7 @@
  */
 
 // The base API URL for production (deployed) environment
+// Make sure there's no trailing slash at the end of the URL
 export const API_URL = import.meta.env.PROD 
   ? 'https://efficient-freida-samuel-gfather-42709cdd.koyeb.app/api' 
   : '/api';

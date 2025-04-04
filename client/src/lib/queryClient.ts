@@ -18,7 +18,16 @@ export function getFullApiUrl(path: string): string {
   
   // If path already has /api, don't add it again
   if (path.startsWith('/api/')) {
-    return import.meta.env.PROD ? `${API_URL}${path.substring(4)}` : path;
+    // In production environment, make sure we're using the full Koyeb URL
+    if (import.meta.env.PROD) {
+      // This strips off the '/api' prefix
+      const apiPath = path.substring(4);
+      // This ensures we have a full URL to the Koyeb backend
+      return `${API_URL}${apiPath}`;
+    } else {
+      // In development, keep the path as is
+      return path;
+    }
   }
   
   // Normal path, ensure it starts with /
@@ -36,13 +45,35 @@ export async function apiRequest(
 ): Promise<Response> {
   const fullUrl = getFullApiUrl(url);
   
-  const res = await fetch(fullUrl, {
+  // Log for debugging
+  console.log(`Making ${method} request to: ${fullUrl}`);
+  
+  // Create headers with access control
+  const headers: Record<string, string> = {
+    "Accept": "application/json",
+  };
+  
+  // Add content type for requests with body
+  if (data) {
+    headers["Content-Type"] = "application/json";
+  }
+  
+  // Different fetch options for CORS
+  const fetchOptions: RequestInit = {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
-  });
-
+    mode: "cors"
+  };
+  
+  // Make the request
+  const res = await fetch(fullUrl, fetchOptions);
+  
+  // Log response status
+  console.log(`Response from ${fullUrl}: ${res.status}`);
+  
+  // Handle any errors
   await throwIfResNotOk(res);
   return res;
 }
@@ -56,11 +87,24 @@ export const getQueryFn: <T>(options: {
     // Handle API URL transformation for production
     const url = getFullApiUrl(queryKey[0] as string);
     
+    // Log the query URL for debugging
+    console.log(`Query request to: ${url}`);
+    
+    // Similar fetch options as in apiRequest for consistency
     const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json"
+      },
       credentials: "include",
+      mode: "cors"
     });
+    
+    // Log response status
+    console.log(`Query response from ${url}: ${res.status}`);
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+      console.log(`Unauthorized access to ${url}, returning null as configured`);
       return null;
     }
 

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, getFullApiUrl } from "@/lib/queryClient";
+import { BASE_URL } from "@/config";
 import { 
   Download, 
   Trash2, 
@@ -467,7 +468,11 @@ export default function Documents() {
       );
       
       const data = await response.json();
-      setShareLink(data.shareUrl);
+      
+      // Manually construct the URL using the BASE_URL from config
+      // This ensures the share link works in both development and production (GitHub Pages) environments
+      const shareUrl = `${window.location.protocol}//${window.location.host}${BASE_URL}shared/${data.shareToken}`;
+      setShareLink(shareUrl);
       
       toast({
         title: "Success",
@@ -564,13 +569,20 @@ export default function Documents() {
 
   const verifyPassword = async () => {
     try {
+      // For troubleshooting, log the endpoint we're calling
+      console.log("Verifying password against:", getFullApiUrl('/api/auth/verify'));
+      
       // Verify password with the server
-      await apiRequest('POST', '/api/auth/verify', { password });
+      const response = await apiRequest('POST', '/api/auth/verify', { password });
+      
+      // Debug response
+      console.log("Password verification response status:", response.status);
       
       // Set authentication state in React state
       setIsAuthenticated(true);
       
-      // Store authentication in localStorage with timestamp for fallback
+      // Store authentication in localStorage with timestamp
+      // This is crucial for GitHub Pages deployment
       const currentTime = new Date().getTime();
       localStorage.setItem('isAuthenticated', 'true');
       localStorage.setItem('authTimestamp', currentTime.toString());
@@ -581,6 +593,9 @@ export default function Documents() {
         description: "Access granted to documents",
       });
     } catch (error) {
+      // Log the error for troubleshooting
+      console.error("Authentication error:", error);
+      
       // Clear any existing authentication state on error
       setIsAuthenticated(false);
       localStorage.removeItem('isAuthenticated');
@@ -588,7 +603,7 @@ export default function Documents() {
       
       toast({
         title: "Error",
-        description: "Invalid password",
+        description: "Invalid password - please check connection to the server",
         variant: "destructive",
       });
     }
