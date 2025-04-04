@@ -43,3 +43,74 @@ Run the server in development mode:
 ```bash
 npm run dev
 ```
+
+## Koyeb Deployment
+
+This server is designed to be deployed on Koyeb as an API-only backend, while the frontend is hosted on GitHub Pages.
+
+### Deployment Instructions
+
+1. **Build for Koyeb**:
+   ```bash
+   npm run build:koyeb
+   ```
+
+2. **Configure Koyeb**:
+   - Set the build command to: `npm run build:koyeb`
+   - Set the start command to: `npm run start:koyeb`
+   - Add all necessary environment variables
+
+3. **Project Structure for Koyeb**:
+   ```
+   server/
+   ├── db.ts             # Database connection
+   ├── index.ts          # Full-stack server (development)
+   ├── koyeb.ts          # API-only server (Koyeb production)
+   ├── routes.ts         # API endpoints
+   ├── schema.ts         # Data models and schemas
+   ├── storage.ts        # Storage interface implementation
+   └── shared/           # Shared schemas and types
+       └── schema.ts     # Shared types
+   ```
+
+4. **Why a Separate Koyeb Entry Point?**:
+   - The main `index.ts` depends on client-side Vite config for development
+   - The `koyeb.ts` file is optimized for API-only deployment without client dependencies
+   - This avoids build errors related to missing client files on Koyeb
+
+For more details, see the [Koyeb Deployment Fix documentation](../client/koyeb-fix.md).
+## Koyeb Deployment
+
+This server is designed to be deployed on Koyeb as an API-only backend, while the frontend is hosted on GitHub Pages.
+
+### Deployment Instructions
+
+1. **Build for Koyeb**:
+   ```bash
+   npm run build:koyeb
+   ```
+
+2. **Configure Koyeb**:
+   - Set the build command to: `npm run build:koyeb`
+   - Set the start command to: `npm run start:koyeb`
+   - Add all necessary environment variables
+
+3. **Project Structure for Koyeb**:
+   ```
+   server/
+   ├── db.ts             # Database connection
+   ├── index.ts          # Full-stack server (development)
+   ├── koyeb.ts          # API-only server (Koyeb production)
+   ├── routes.ts         # API endpoints
+   ├── schema.ts         # Data models and schemas
+   ├── storage.ts        # Storage interface implementation
+   └── shared/           # Shared schemas and types
+       └── schema.ts     # Shared types
+   ```
+
+4. **Why a Separate Koyeb Entry Point?**:
+   - The main `index.ts` depends on client-side Vite config for development
+   - The `koyeb.ts` file is optimized for API-only deployment without client dependencies
+   - This avoids build errors related to missing client files on Koyeb
+
+For more details, see the `koyeb-fix.md` documentation in the client directory.
