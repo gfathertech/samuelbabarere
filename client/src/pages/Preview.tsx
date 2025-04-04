@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import PreviewSkeleton from "@/components/document/PreviewSkeleton";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useToast } from "@/hooks/use-toast";
+import { BASE_URL } from "../config";
 
 const PdfViewer = lazy(() => import('@/components/document/PdfViewer'));
 const DocumentPreview = lazy(() => import('@/components/document/DocumentPreview'));
@@ -36,7 +37,6 @@ export default function Preview() {
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('authTimestamp');
     // Navigate to home with respect to BASE_URL
-    import { BASE_URL } from "../config";
     navigate(BASE_URL);
     // Notify user
     toast({
@@ -174,7 +174,7 @@ export default function Preview() {
             <div className="flex flex-wrap gap-2 justify-center">
               <Button 
                 variant="outline" 
-                onClick={() => navigate('/documents')}
+                onClick={() => navigate(`${BASE_URL}documents`)}
                 className="whitespace-nowrap"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Documents
@@ -212,7 +212,7 @@ export default function Preview() {
           <div className="flex flex-wrap gap-2">
             <Button 
               variant="outline" 
-              onClick={() => navigate('/documents')}
+              onClick={() => navigate(`${BASE_URL}documents`)}
               className="whitespace-nowrap"
             >
               <ArrowLeft className="mr-2 h-4 w-4" /> Back to Documents

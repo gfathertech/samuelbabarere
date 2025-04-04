@@ -8,6 +8,7 @@ import { AlertCircle, ArrowLeft, Download, Clock, ExternalLink } from 'lucide-re
 import { Helmet } from 'react-helmet';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { getFullApiUrl, apiRequest } from '@/lib/queryClient';
+import { BASE_URL } from '../config';
 
 interface SharedDocumentPreview {
   _id: string;
@@ -140,7 +141,7 @@ export default function SharedDocument() {
           <Button
             className="mt-6" 
             variant="outline"
-            onClick={() => navigate('/')}
+            onClick={() => navigate(`${BASE_URL}`)}
           >
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Home
           </Button>
@@ -250,7 +251,7 @@ export default function SharedDocument() {
       <div className="mt-6 flex justify-center gap-4">
         <Button
           variant="outline"
-          onClick={() => navigate('/')}
+          onClick={() => navigate(`${BASE_URL}`)}
           className="text-gray-600"
         >
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Home
