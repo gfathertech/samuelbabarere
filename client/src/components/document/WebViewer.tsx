@@ -7,11 +7,50 @@ interface WebViewerProps {
   fileType: string;
 }
 
-const WebViewer: React.FC<WebViewerProps> = ({ content, fileType }) => {
+const WebViewer: React.FC<WebViewerProps> = ({ content, fileType, docId }) => {
   const viewer = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Log component initialization
+  useEffect(() => {
+    console.log('WebViewer: Component initialized', {
+      fileType, 
+      docId,
+      contentLength: content ? content.length : 0
+    });
+    
+    // Validate content format
+    if (!content) {
+      console.error('WebViewer: No content provided');
+      setError('No document content available');
+      setLoading(false);
+      return;
+    }
+    
+    // Validate file type
+    if (!fileType) {
+      console.error('WebViewer: No file type provided');
+      setError('Unknown document format');
+      setLoading(false);
+      return;
+    }
+    
+    const validFileTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/msword',
+      'application/vnd.ms-excel',
+      'application/vnd.ms-powerpoint'
+    ];
+    
+    if (!validFileTypes.includes(fileType)) {
+      console.warn('WebViewer: Attempting to preview potentially unsupported file type', fileType);
+    }
+  }, [content, fileType, docId]);
+  
   useEffect(() => {
     // Keep track of whether the component is mounted
     let isMounted = true;
@@ -22,80 +61,122 @@ const WebViewer: React.FC<WebViewerProps> = ({ content, fileType }) => {
       
       try {
         if (!viewer.current || !content) {
+          console.error('WebViewer initialization failed: viewer ref or content missing', {
+            hasViewerRef: !!viewer.current,
+            contentLength: content ? content.length : 0
+          });
           setError('Unable to initialize document viewer');
           setLoading(false);
           return;
         }
 
         setLoading(true);
+        console.log('WebViewer: Loading document viewer');
 
         // Import WebViewer dynamically to reduce initial load time
         const WebViewerModule = await import('@pdftron/webviewer');
         const PDFTron = WebViewerModule.default;
+        console.log('WebViewer: Module loaded successfully');
 
         // Get the base64 content from the data URL
         let base64Content = content;
         if (content.includes('base64,')) {
           base64Content = content.split('base64,')[1];
+          console.log('WebViewer: Extracted base64 content from data URL');
+        } else {
+          console.log('WebViewer: Content does not contain base64 marker, using as is');
         }
 
         // Convert the base64 string to Uint8Array
-        const binaryString = atob(base64Content);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        
-        // Create a blob from the bytes for WebViewer
-        const blob = new Blob([bytes]);
-        fileUrl = URL.createObjectURL(blob);
-        
-        // Track for cleanup
-        cleanupTasks.push(() => URL.revokeObjectURL(fileUrl));
-
-        // Initialize WebViewer - using the direct initialDoc approach
-        const instance: any = await PDFTron({
-          path: '/webviewer/lib', // Path to the WebViewer assets
-          initialDoc: fileUrl,
-          filename: `document.${getExtensionFromMime(fileType)}`,
-          extension: getExtensionFromMime(fileType),
-          fullAPI: true,
-          disabledElements: [
-            'toolsHeader',
-            'searchButton',
-            'menuButton',
-            'contextMenuPopup',
-          ],
-        }, viewer.current);
-
-        // Listen for the document loaded event
-        const documentLoadedHandler = () => {
-          if (isMounted) {
-            setLoading(false);
-            console.log('Document loaded successfully');
+        try {
+          const binaryString = atob(base64Content);
+          console.log(`WebViewer: Decoded base64 string, length: ${binaryString.length}`);
+          
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
           }
-        };
-        
-        // Track for cleanup
-        cleanupTasks.push(() => {
-          if (instance && viewer.current) {
-            instance.UI.dispose();
-          }
-        });
-
-        // Add event listeners
-        if (instance.Core && instance.Core.documentViewer) {
-          instance.Core.documentViewer.addEventListener('documentLoaded', documentLoadedHandler);
+          
+          // Create a blob from the bytes for WebViewer
+          const blob = new Blob([bytes]);
+          fileUrl = URL.createObjectURL(blob);
+          console.log('WebViewer: Created blob URL for document', { fileUrl });
+          
+          // Track for cleanup
+          cleanupTasks.push(() => URL.revokeObjectURL(fileUrl));
+        } catch (decodeError) {
+          console.error('WebViewer: Failed to decode base64 content', decodeError);
+          setError('Invalid document format');
+          setLoading(false);
+          return;
         }
 
-        // Handle WebViewer errors
-        instance.UI.addEventListener('loaderror', (err: any) => {
-          if (isMounted) {
-            console.error('WebViewer error:', err);
-            setError('Failed to load document');
-            setLoading(false);
+        try {
+          // Initialize WebViewer - using the direct initialDoc approach
+          console.log('WebViewer: Initializing viewer with extension', getExtensionFromMime(fileType));
+          const instance: any = await PDFTron({
+            path: '/webviewer/lib', // Path to the WebViewer assets
+            initialDoc: fileUrl,
+            filename: `document.${getExtensionFromMime(fileType)}`,
+            extension: getExtensionFromMime(fileType),
+            fullAPI: true,
+            disabledElements: [
+              'toolsHeader',
+              'searchButton',
+              'menuButton',
+              'contextMenuPopup',
+            ],
+            // Fix type errors - remove properties that cause issues
+            // enableFilePicker: false,
+            // preloadWorker: true,
+          }, viewer.current);
+          
+          console.log('WebViewer: Instance created successfully');
+
+          // Listen for the document loaded event
+          const documentLoadedHandler = () => {
+            if (isMounted) {
+              setLoading(false);
+              console.log('WebViewer: Document loaded successfully');
+            }
+          };
+          
+          // Track for cleanup
+          cleanupTasks.push(() => {
+            try {
+              if (instance && instance.UI && viewer.current) {
+                console.log('WebViewer: Running disposal cleanup');
+                instance.UI.dispose();
+              }
+            } catch (disposeError) {
+              console.error('WebViewer: Error during disposal', disposeError);
+            }
+          });
+
+          // Add event listeners
+          if (instance.Core && instance.Core.documentViewer) {
+            console.log('WebViewer: Adding document loaded event listener');
+            instance.Core.documentViewer.addEventListener('documentLoaded', documentLoadedHandler);
+          } else {
+            console.warn('WebViewer: documentViewer not available for event registration');
           }
-        });
+
+          // Handle WebViewer errors
+          instance.UI.addEventListener('loaderror', (err: any) => {
+            if (isMounted) {
+              console.error('WebViewer: Load error event', err);
+              setError('Failed to load document');
+              setLoading(false);
+            }
+          });
+          
+          // Log successful initialization
+          console.log('WebViewer: Initialization complete, waiting for document to load');
+        } catch (viewerError) {
+          console.error('WebViewer: Error during viewer initialization', viewerError);
+          setError('Error initializing document viewer');
+          setLoading(false);
+        }
 
         // Fallback to automatically hide loading after a timeout
         const fallbackTimer = setTimeout(() => {

@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { API_URL } from "../config";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -7,12 +8,35 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+/**
+ * Helper to generate full API URLs in production or use relative paths in development
+ */
+export function getFullApiUrl(path: string): string {
+  if (path.startsWith('http')) {
+    return path; // Already a full URL
+  }
+  
+  // If path already has /api, don't add it again
+  if (path.startsWith('/api/')) {
+    return import.meta.env.PROD ? `${API_URL}${path.substring(4)}` : path;
+  }
+  
+  // Normal path, ensure it starts with /
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return import.meta.env.PROD ? `${API_URL}${normalizedPath}` : `/api${normalizedPath}`;
+}
+
+/**
+ * Make API requests with proper URL handling for production/development
+ */
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  const fullUrl = getFullApiUrl(url);
+  
+  const res = await fetch(fullUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
@@ -29,7 +53,10 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    // Handle API URL transformation for production
+    const url = getFullApiUrl(queryKey[0] as string);
+    
+    const res = await fetch(url, {
       credentials: "include",
     });
 

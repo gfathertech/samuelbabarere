@@ -1,0 +1,87 @@
+# Deploying to GitHub Pages
+
+This document provides step-by-step instructions for deploying the frontend of this application to GitHub Pages.
+
+## Prerequisites
+
+- A GitHub account
+- Git installed on your local machine
+- Node.js and npm installed
+
+## Steps for Deployment
+
+### 1. Prepare Your Repository
+
+1. Create a new GitHub repository or use an existing one
+2. Clone the repository to your local machine
+3. Copy your client code to the repository
+
+### 2. Configure for GitHub Pages
+
+The project is already configured to work with GitHub Pages. The key configurations are:
+
+- In vite.config.ts, the base parameter is set to adapt to GitHub Pages
+- The config.ts file handles API URLs to ensure the frontend connects to the backend in production
+
+### 3. Build the Project
+
+```
+# Navigate to the client directory
+cd client
+
+# Install dependencies
+npm install
+
+# Build the project with the correct base path
+# Replace 'your-repo-name' with your actual GitHub repository name
+BASE_PATH='/your-repo-name/' npm run build
+```
+
+### 4. Deploy to GitHub Pages
+
+#### Option 1: Manual Deployment
+
+```
+# Create a new branch for GitHub Pages
+git checkout -b gh-pages
+
+# Copy build files to the root
+cp -r dist/* .
+
+# Commit the changes
+git add .
+git commit -m "Deploy to GitHub Pages"
+
+# Push to GitHub
+git push -u origin gh-pages
+```
+
+#### Option 2: Using GitHub Actions (Recommended)
+
+1. Create a .github/workflows directory in your repository
+2. Create a file named deploy-gh-pages.yml with the appropriate GitHub Actions configuration
+3. Push this file to your repository
+4. GitHub Actions will automatically build and deploy your site whenever you push to the main branch
+
+### 5. Configure GitHub Pages in Repository Settings
+
+1. Go to your repository on GitHub
+2. Navigate to Settings > Pages
+3. Under "Source", select the gh-pages branch
+4. Click "Save"
+
+## Verification
+
+After deployment, your site should be available at:
+https://yourusername.github.io/your-repo-name/
+
+## Troubleshooting
+
+- If assets are not loading, check that the BASE_PATH is set correctly
+- If API calls are failing, verify the backend URL in config.ts
+- For 404 errors, ensure routing is working with the correct base path
+
+## Note About Backend
+
+Remember that this deployment only covers the frontend. The backend remains deployed on Koyeb at:
+https://efficient-freida-samuel-gfather-42709cdd.koyeb.app

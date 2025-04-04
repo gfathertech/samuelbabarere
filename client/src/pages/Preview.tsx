@@ -45,48 +45,96 @@ export default function Preview() {
   };
 
   useEffect(() => {
+    // Extract document ID from URL
     const id = location.split('/')[2];
+    
+    console.log('Preview: Component initialized with location', { location, id });
+    
     if (!id) {
-      setError("Invalid document ID");
+      console.error('Preview: No document ID found in URL');
+      setError("Invalid document ID - Please check the URL and try again");
       setLoading(false);
       return;
     }
 
     setDocId(id);
+    
     const fetchPreview = async () => {
       try {
         setLoading(true);
-        console.log('Fetching preview for document:', id);
+        setError(null);
+        console.log('Preview: Fetching document data for ID:', id);
 
+        // Attempt to fetch document preview data from API
+        console.log('Preview: Making API request to', `/api/documents/${id}/preview`);
         const response = await fetch(`/api/documents/${id}/preview`);
+        
+        // Handle HTTP errors
         if (!response.ok) {
-          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+          console.error('Preview: Server returned error status', { 
+            status: response.status, 
+            statusText: response.statusText 
+          });
+          
+          // Handle specific error codes
+          if (response.status === 404) {
+            throw new Error("Document not found - It may have been deleted or the link is invalid");
+          } else if (response.status === 403) {
+            throw new Error("Access denied - You don't have permission to view this document");
+          } else if (response.status >= 500) {
+            throw new Error("Server error - Please try again later");
+          } else {
+            throw new Error(`Server error: ${response.status} ${response.statusText}`);
+          }
         }
 
+        // Parse JSON response
         const data = await response.json();
-        console.log('Document preview response:', {
+        console.log('Preview: Document data received', {
           type: data.type,
           hasContent: !!data.content,
-          contentLength: data.content?.length,
+          contentLength: data.content?.length || 0,
           previewAvailable: data.previewAvailable,
-          name: data.name
+          name: data.name,
+          user: data.user
         });
 
-        if (!data.content) {
-          throw new Error("Document content is missing from server response");
+        // Validate response data
+        if (!data.type) {
+          console.error('Preview: Document type missing from server response');
+          throw new Error("Invalid document data - Missing document type");
+        }
+        
+        if (!data.content && data.previewAvailable !== false) {
+          console.error('Preview: Document content missing from server response');
+          throw new Error("Document content is missing or corrupted");
         }
 
+        // Store document data
         setPreviewData(data);
         setError(null);
+        
+        // Set page title based on document name
+        if (data.name) {
+          document.title = `${data.name} - Document Viewer`;
+        }
+        
       } catch (err) {
-        console.error("Preview error:", err);
-        setError(err instanceof Error ? err.message : "Failed to load preview");
+        console.error("Preview: Error loading document", err);
+        setError(err instanceof Error ? err.message : "Failed to load document preview");
+        setPreviewData(null);
       } finally {
         setLoading(false);
       }
     };
 
     fetchPreview();
+    
+    // Cleanup function
+    return () => {
+      // Reset page title on unmount
+      document.title = 'Document Viewer';
+    };
   }, [location]);
 
   if (loading) {

@@ -58,6 +58,70 @@ Run the application in development mode:
 npm run dev
 ```
 
+## Deployment
+
+### Backend Deployment
+The backend is already deployed on Koyeb at:
+```
+https://efficient-freida-samuel-gfather-42709cdd.koyeb.app
+```
+
+### Frontend Deployment on GitHub Pages
+
+1. **Build the frontend for production**
+   ```bash
+   # Navigate to client directory
+   cd client
+   
+   # Build with correct base path for GitHub Pages
+   # Replace 'your-repo-name' with your actual repository name
+   BASE_PATH='/your-repo-name/' npm run build
+   ```
+
+2. **Deploy built files to GitHub Pages**
+   - Create a branch named `gh-pages`
+   - Copy contents of `client/dist` to the root of this branch
+   - Push the branch to GitHub
+   - Enable GitHub Pages in repository settings, using the `gh-pages` branch
+
+3. **Verify the deployment**
+   - Your site should be available at `https://yourusername.github.io/your-repo-name/`
+   - The frontend is configured to connect to the Koyeb backend automatically in production
+
+For more detailed instructions, see [GitHub Pages Deployment Guide](https://docs.github.com/en/pages/getting-started-with-github-pages).
+
 ## License
 
 MIT
+
+## Deployment
+
+### Backend Deployment
+The backend is already deployed on Koyeb at:
+```
+https://efficient-freida-samuel-gfather-42709cdd.koyeb.app
+```
+
+### Frontend Deployment on GitHub Pages
+
+1. **Build the frontend for production**
+   ```bash
+   # Navigate to client directory
+   cd client
+   
+   # Build with correct base path for GitHub Pages
+   # Replace 'your-repo-name' with your actual repository name
+   BASE_PATH='/your-repo-name/' npm run build
+   ```
+
+2. **Deploy built files to GitHub Pages**
+   - Create a branch named `gh-pages`
+   - Copy contents of `client/dist` to the root of this branch
+   - Push the branch to GitHub
+   - Enable GitHub Pages in repository settings, using the `gh-pages` branch
+
+3. **Verify the deployment**
+   - Your site should be available at `https://yourusername.github.io/your-repo-name/`
+   - The frontend is configured to connect to the Koyeb backend automatically in production
+
+For more detailed instructions, see GitHub Pages documentation.

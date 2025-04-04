@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --port 3000 --host",
     "build": "vite build",
+    "build:gh-pages": "BASE_PATH='/${GITHUB_REPO_NAME:-portfolio}/' vite build",
     "preview": "vite preview --port 3000 --host"
   },
   "dependencies": {
@@ -52,7 +53,8 @@
     "input-otp": "^1.2.4",
     "lucide-react": "^0.284.0",
     "mammoth": "^1.9.0",
-    "pdfjs-dist": "^3.11.174",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^5.1.91",
     "pptx2html": "^0.3.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

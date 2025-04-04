@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Download, FileText, FileSpreadsheet, PresentationIcon, FileImage } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Download, FileText, FileSpreadsheet, PresentationIcon, FileImage, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { lazy, Suspense } from 'react';
 
@@ -15,20 +15,63 @@ interface DocumentPreviewProps {
 }
 
 export default function DocumentPreview({ type, content, name, docId, error: propError }: DocumentPreviewProps) {
-  const [error] = useState<string | null>(propError || null);
+  const [error, setError] = useState<string | null>(propError || null);
+  const [contentSize, setContentSize] = useState<number>(0);
 
+  // Log component props and debug info
+  useEffect(() => {
+    console.log('DocumentPreview: Component mounted/updated', { 
+      type, 
+      hasContent: !!content,
+      contentLength: content?.length || 0,
+      name, 
+      docId,
+      error: propError,
+      pathname: window.location.pathname
+    });
+    
+    if (content) {
+      setContentSize(content.length);
+      // Basic content validation
+      try {
+        if (content.length < 50) {
+          console.warn('DocumentPreview: Content appears very short', content);
+        }
+        
+        // For Base64 content, check if it's valid
+        if (content.includes(';base64,')) {
+          const base64Content = content.split(';base64,')[1];
+          if (!base64Content || base64Content.length < 10) {
+            console.error('DocumentPreview: Invalid base64 content');
+            setError('Invalid document data');
+          }
+        }
+      } catch (e) {
+        console.error('DocumentPreview: Error validating content', e);
+      }
+    }
+  }, [type, content, name, docId, propError]);
+
+  // Enhanced error display
   if (error) {
+    console.error('DocumentPreview: Rendering error state', error);
     return (
-      <div className="flex items-center justify-center p-4 text-red-500">
-        <p>{error}</p>
+      <div className="flex flex-col items-center justify-center p-4 text-red-500 bg-red-50 rounded-lg border border-red-200">
+        <AlertTriangle className="w-8 h-8 mb-2" />
+        <p className="font-medium text-center">{error}</p>
+        <p className="text-xs text-red-400 mt-1">Check the browser console for more details</p>
       </div>
     );
   }
 
+  // No content available
   if (!content) {
+    console.warn('DocumentPreview: No content available');
     return (
-      <div className="flex items-center justify-center p-4">
-        <p>No preview available</p>
+      <div className="flex flex-col items-center justify-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <FileText className="w-8 h-8 text-gray-400 mb-2" />
+        <p className="text-gray-600">No preview available</p>
+        <p className="text-xs text-gray-500 mt-1">Content may be missing or corrupted</p>
       </div>
     );
   }

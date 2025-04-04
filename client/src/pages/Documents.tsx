@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getFullApiUrl } from "@/lib/queryClient";
 import { 
   Download, 
   Trash2, 
@@ -184,10 +184,7 @@ function DocumentPreviewContent({ doc }: { doc: Document }) {
     const fetchPreview = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/documents/${doc._id}/preview`);
-        if (!response.ok) {
-          throw new Error("Failed to load preview");
-        }
+        const response = await apiRequest('GET', `/documents/${doc._id}/preview`);
         const data = await response.json();
         setPreviewData(data);
       } catch (err) {
@@ -334,7 +331,7 @@ function DocumentPreviewContent({ doc }: { doc: Document }) {
                 <Eye className="w-3.5 h-3.5 mr-1" /> Preview
               </a>
               <a 
-                href={`/api/documents/${doc._id}/download`}
+                href={getFullApiUrl(`/documents/${doc._id}/download`)}
                 className="text-xs flex items-center text-pink-600 hover:text-pink-800 bg-white px-3 py-1 rounded-full shadow-sm"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -463,17 +460,11 @@ export default function Documents() {
     
     setIsSharing(true);
     try {
-      const response = await fetch(`/api/documents/${documentToShare._id}/share`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ expirationDays: sharingExpiration }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to create shareable link');
-      }
+      const response = await apiRequest(
+        'POST', 
+        `/documents/${documentToShare._id}/share`, 
+        { expirationDays: sharingExpiration }
+      );
       
       const data = await response.json();
       setShareLink(data.shareUrl);
@@ -508,14 +499,7 @@ export default function Documents() {
     
     setIsSharing(true);
     try {
-      const response = await fetch(`/api/documents/${documentToShare._id}/share`, {
-        method: 'DELETE',
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to disable sharing');
-      }
-      
+      const response = await apiRequest('DELETE', `/documents/${documentToShare._id}/share`);
       setShareLink("");
       
       toast({
@@ -550,10 +534,7 @@ export default function Documents() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/documents/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Failed to delete document');
+      const response = await apiRequest('DELETE', `/documents/${id}`);
       return response.json();
     },
     onSuccess: () => {
@@ -575,10 +556,7 @@ export default function Documents() {
   const { data: documents = [] } = useQuery<Document[]>({
     queryKey: ['/api/documents', selectedUser],
     queryFn: async () => {
-      const response = await fetch(`/api/documents?user=${selectedUser}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch documents');
-      }
+      const response = await apiRequest('GET', `/documents?user=${selectedUser}`);
       return response.json();
     },
     enabled: isAuthenticated,
@@ -885,7 +863,7 @@ export default function Documents() {
                           </p>
                           <div className="mt-3 flex justify-between">
                             <a
-                              href={`/api/documents/${doc._id}/download`}
+                              href={getFullApiUrl(`/documents/${doc._id}/download`)}
                               className="text-xs flex items-center text-blue-600 hover:text-blue-800 dark:text-purple-300 dark:hover:text-pink-300"
                               target="_blank"
                               rel="noopener noreferrer"
@@ -912,7 +890,7 @@ export default function Documents() {
                         </Link>
                       )}
                       <a
-                        href={`/api/documents/${doc._id}/download`}
+                        href={getFullApiUrl(`/documents/${doc._id}/download`)}
                         className="text-pink-600 hover:text-pink-700 dark:text-purple-300 dark:hover:text-pink-300 transition-colors"
                         title="Download document"
                         target="_blank"
