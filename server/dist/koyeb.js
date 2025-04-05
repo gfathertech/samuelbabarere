@@ -754,14 +754,18 @@ app.use((req, res, next) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
     res.status(status).json({ message });
-    throw err;
+    console.error(err);
   });
-  const port = 5e3;
+  app.use("/api/*", (_req, res) => {
+    res.status(404).json({ error: "API endpoint not found" });
+  });
+  const port = process.env.PORT || 3e3;
   server.listen({
     port,
     host: "0.0.0.0",
     reusePort: true
   }, () => {
-    console.log(`API server running on port ${port}`);
+    console.log(`API server running on http://0.0.0.0:${port}`);
+    console.log(`API is available at http://0.0.0.0:${port}/api`);
   });
 })();

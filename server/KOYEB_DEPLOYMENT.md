@@ -1,56 +1,75 @@
-# Koyeb Deployment Instructions
+# Koyeb Deployment Guide
 
-## Preparation
+This document provides step-by-step instructions for deploying the backend API server to Koyeb.
 
-1. Make sure all your changes are committed to your repository.
-2. Push your changes to GitHub.
+## Prerequisites
 
-## Build Command
+- A Koyeb account (sign up at [koyeb.com](https://koyeb.com) if you don't have one)
+- Your application code pushed to a GitHub repository
+- MongoDB Atlas database set up with connection string
 
-When setting up the deployment on Koyeb, use this build command:
+## Deployment Steps
 
-```
-npm run build:koyeb
-```
+### 1. Prepare your repository
 
-## Start Command
+Ensure your GitHub repository includes:
+- The server directory with all necessary files
+- The `koyeb.ts` entry point file (for API-only deployment)
+- Updated package.json with the correct build and start scripts
 
-For the start command on Koyeb, use:
+### 2. Create a new Koyeb service
 
-```
-npm run start:koyeb
-```
+1. Log in to your Koyeb account
+2. Click "Create App" from the dashboard
+3. Choose "GitHub" as your deployment method
+4. Select your repository and branch
+5. Configure the build:
+   - Build Command: `npm run build:koyeb`
+   - Start Command: `npm run start:koyeb`
+   - Root Directory: `server` (important!)
 
-## Environment Variables
+### 3. Set Environment Variables
 
-Make sure to set these environment variables in Koyeb:
-
+Add the following environment variables:
 - `MONGODB_URI`: Your MongoDB connection string
-- Any other environment variables your application needs
+- `PORT`: 8000 (or let Koyeb assign a port)
+- `NODE_ENV`: production
+- Any other secrets or configuration variables your app needs
 
-## Verification
+### 4. Deploy
 
-After deployment, verify that your API is working by making a test request to one of your endpoints, for example:
+Click "Deploy" to start the deployment process. Koyeb will:
+1. Clone your repository
+2. Build the application using your build command
+3. Deploy and start the service
 
-```
-curl https://your-koyeb-domain.koyeb.app/api/documents
-```
+### 5. Verify Deployment
+
+Once deployed:
+1. Koyeb will provide a unique URL for your API
+2. Test the API by visiting `https://your-koyeb-url.koyeb.app/api/health`
+3. If you see a success response, your API is deployed successfully
+
+### 6. Update Client Configuration
+
+Update your frontend application to use the new Koyeb API URL:
+1. Update the `API_URL` in `client/src/config.ts`
+2. Rebuild and deploy the frontend to GitHub Pages
 
 ## Troubleshooting
 
-If you encounter any issues:
+If deployment fails:
+1. Check the build logs in Koyeb dashboard
+2. Verify all environment variables are set correctly
+3. Ensure your MongoDB instance is accessible from Koyeb
+4. Check the server logs for runtime errors
 
-1. Check the Koyeb logs for any error messages
-2. Verify that all environment variables are set correctly
-3. Ensure that the MongoDB connection is working
-4. Check CORS settings if you're having cross-origin request issues
+## Maintenance
 
-## Connecting Frontend to Backend
+To update your deployment:
+1. Push changes to your GitHub repository
+2. Koyeb will automatically rebuild and redeploy
 
-Remember to update your frontend configuration (`client/src/config.ts`) to point to your Koyeb API URL:
-
-```typescript
-export const API_URL = import.meta.env.PROD 
-  ? 'https://your-koyeb-domain.koyeb.app' 
-  : '';
-```
+For manual redeployment:
+1. Go to your app in Koyeb dashboard
+2. Click "Redeploy" on the service you want to update

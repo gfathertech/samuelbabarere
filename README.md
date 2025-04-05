@@ -60,11 +60,33 @@ npm run dev
 
 ## Deployment
 
-### Backend Deployment
-The backend is already deployed on Koyeb at:
+### Backend Deployment on Koyeb
+
+The backend is deployed on Koyeb at:
 ```
 https://efficient-freida-samuel-gfather-42709cdd.koyeb.app
 ```
+
+#### Updating the Backend Deployment
+
+To deploy a new version of the backend to Koyeb:
+
+1. **Use the optimized koyeb.ts entry point**
+   This file is specifically designed for Koyeb deployment without client dependencies.
+
+2. **Configure Koyeb deployment**
+   ```
+   Build Command: npm run build:koyeb
+   Start Command: npm run start:koyeb
+   Root Directory: server
+   ```
+
+3. **Set required environment variables**
+   - `MONGODB_URI`: Your MongoDB connection string
+   - `NODE_ENV`: production
+   - `PORT`: 8000 (or let Koyeb assign one)
+
+For detailed instructions, see [server/KOYEB_DEPLOYMENT.md](server/KOYEB_DEPLOYMENT.md).
 
 ### Frontend Deployment on GitHub Pages
 
@@ -79,7 +101,8 @@ https://efficient-freida-samuel-gfather-42709cdd.koyeb.app
    ```
 
 2. **Deploy built files to GitHub Pages**
-   - Create a branch named `gh-pages`
+   - Use the GitHub Actions workflow in `.github/workflows/deploy-gh-pages.yml`
+   - Alternatively, manually create a branch named `gh-pages`
    - Copy contents of `client/dist` to the root of this branch
    - Push the branch to GitHub
    - Enable GitHub Pages in repository settings, using the `gh-pages` branch
@@ -93,35 +116,3 @@ For more detailed instructions, see [GitHub Pages Deployment Guide](https://docs
 ## License
 
 MIT
-
-## Deployment
-
-### Backend Deployment
-The backend is already deployed on Koyeb at:
-```
-https://efficient-freida-samuel-gfather-42709cdd.koyeb.app
-```
-
-### Frontend Deployment on GitHub Pages
-
-1. **Build the frontend for production**
-   ```bash
-   # Navigate to client directory
-   cd client
-   
-   # Build with correct base path for GitHub Pages
-   # Replace 'your-repo-name' with your actual repository name
-   BASE_PATH='/your-repo-name/' npm run build
-   ```
-
-2. **Deploy built files to GitHub Pages**
-   - Create a branch named `gh-pages`
-   - Copy contents of `client/dist` to the root of this branch
-   - Push the branch to GitHub
-   - Enable GitHub Pages in repository settings, using the `gh-pages` branch
-
-3. **Verify the deployment**
-   - Your site should be available at `https://yourusername.github.io/your-repo-name/`
-   - The frontend is configured to connect to the Koyeb backend automatically in production
-
-For more detailed instructions, see GitHub Pages documentation.
