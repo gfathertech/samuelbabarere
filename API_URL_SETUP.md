@@ -1,112 +1,104 @@
-# Connecting GitHub Pages Frontend to Koyeb Backend
+# Setting Up Your API URL for Vercel Deployment
 
-This guide explains how to update your frontend application (deployed on GitHub Pages) to connect with your backend API (deployed on Koyeb).
+This guide explains how to configure the API URL for your Vercel frontend deployment to connect with your Koyeb backend.
 
-## 1. Get Your Koyeb API URL
+## Understanding the API URL Configuration
 
-After deploying your backend to Koyeb:
-
-1. Log in to your Koyeb dashboard
-2. Select your application
-3. Copy the URL provided by Koyeb (e.g., `https://your-app-name.koyeb.app`)
-
-## 2. Update Frontend Configuration
-
-Open `client/src/config.ts` and update the `API_URL` constant:
+In this application, the API URL is configured in `client/src/config.ts`:
 
 ```typescript
 export const API_URL = import.meta.env.PROD 
-  ? 'https://your-app-name.koyeb.app/api' // Replace with your Koyeb URL
+  ? 'https://efficient-freida-samuel-gfather-42709cdd.koyeb.app' 
   : '/api';
 ```
 
-Make sure:
-- You add `/api` at the end of the Koyeb URL
-- There is no trailing slash after `/api`
-- You keep the conditional logic so development mode still works locally
+This configuration:
+- In production (Vercel): Uses the full Koyeb backend URL
+- In development: Uses the relative path `/api` which is proxied by the local Vite server
 
-## 3. Build and Deploy Frontend
+## How to Update Your API URL
 
-Build your frontend application and deploy it to GitHub Pages:
+1. Locate your Koyeb backend URL, which looks like:
+   ```
+   https://your-app-name.koyeb.app
+   ```
 
-```bash
-# Navigate to client directory
-cd client
+2. Open `client/src/config.ts` and update the `API_URL` value:
+   ```typescript
+   export const API_URL = import.meta.env.PROD 
+     ? 'https://your-app-name.koyeb.app' 
+     : '/api';
+   ```
 
-# Build the application
-npm run build
+3. Important: Do not include `/api` at the end of the Koyeb URL, as the application's API request handlers will add this automatically.
 
-# Deploy to GitHub Pages (if using the GitHub Action)
-git add client/dist
-git commit -m "Update build with new Koyeb API URL"
-git push
-```
+4. After making this change, redeploy your application to Vercel.
 
-## 4. Verify the Connection
+## Testing the Connection
 
-1. Open your GitHub Pages website
-2. Open browser developer tools (F12)
-3. Check the Network tab for API requests
-4. Verify that requests are going to your Koyeb URL
-5. Check for any CORS or connection errors
+After deployment, verify the API connection:
 
-## Common Issues and Solutions
+1. Open your Vercel-deployed app
+2. Navigate to the Documents page
+3. Check if documents load properly
+4. Open browser developer tools (F12) and look at the Network tab to ensure API requests are successfully connecting to your Koyeb backend
+
+## Troubleshooting
+
+If you experience API connection issues:
 
 ### CORS Errors
 
 If you see CORS errors in the console:
 
-```
-Access to fetch at 'https://your-app-name.koyeb.app/api/documents' from origin 'https://yourusername.github.io' has been blocked by CORS policy
-```
+1. Verify the Koyeb backend has CORS configured to allow your Vercel domain
+2. Check `server/koyeb.ts` for the CORS configuration:
+   ```typescript
+   app.use(cors({
+     origin: [
+       'http://localhost:3000',
+       'http://localhost:5173',
+       'https://your-vercel-app.vercel.app', // Add your Vercel domain here
+       'https://your-custom-domain.com'      // Add your custom domain if applicable
+     ],
+     credentials: true
+   }));
+   ```
+3. Update the CORS settings on your Koyeb backend to include your Vercel domain
+4. Redeploy your Koyeb backend
 
-Solution:
-1. Check that your Koyeb backend has the correct CORS configuration
-2. Make sure your GitHub Pages domain is listed in the allowed origins in server/koyeb.ts
-3. Ensure you're using the credentials: 'include' option in fetch requests
+### API Endpoint Not Found
 
-### Connection Invalid Error
+If API requests return 404 errors:
 
-If you see "connection invalid" errors:
+1. Check the browser console for the full URLs being requested
+2. Verify that the API_URL in config.ts is correct and doesn't include `/api` at the end
+3. Make sure your Koyeb service is running
+4. Check that the routes in `server/routes.ts` match what your frontend is requesting
 
-1. Double-check that your Koyeb server is running
-2. Verify the URL in config.ts is correct
-3. Test the Koyeb API directly using curl:
+### Connection Timeouts
 
-```bash
-curl https://your-app-name.koyeb.app/api/health
-# Should return: {"status":"healthy","timestamp":"..."}
-```
+If requests time out:
 
-4. Ensure you've properly built and deployed the frontend with the new URL
+1. Verify your Koyeb service is running
+2. Check that there are no firewalls blocking the connection
+3. Try accessing the Koyeb URL directly in your browser to test if the backend is responding
 
-### Authentication Issues
+## Environment Variables Alternative
 
-If you're getting authentication errors:
+For more flexibility, you can use Vercel environment variables:
 
-1. Remember that cookies don't work across domains (GitHub Pages to Koyeb)
-2. The application is designed to use localStorage for authentication
-3. Make sure you're passing credentials in your API requests
-4. Check that the Koyeb server has sameSite: 'none' for cookies
+1. In your Vercel project settings, add an environment variable:
+   - Name: `VITE_API_URL`
+   - Value: Your Koyeb backend URL
 
-## Testing Your API Connection
+2. Update `client/src/config.ts`:
+   ```typescript
+   export const API_URL = import.meta.env.PROD 
+     ? (import.meta.env.VITE_API_URL || 'https://your-app-name.koyeb.app')
+     : '/api';
+   ```
 
-Use the browser console to test your API connection:
+3. This allows you to change the API URL through environment variables without modifying the code.
 
-```javascript
-// Test health endpoint
-fetch('https://your-app-name.koyeb.app/api/health')
-  .then(res => res.json())
-  .then(data => console.log(data))
-  .catch(err => console.error('Connection error:', err));
-```
-
-## Architecture Overview
-
-The application uses:
-
-1. GitHub Pages for hosting the frontend (React)
-2. Koyeb for hosting the backend API (Express)
-3. MongoDB Atlas for the database
-
-The koyeb.ts file is designed to be a standalone API-only entry point that doesn't require client files, making it perfect for deployment on Koyeb.
+Remember to redeploy after making configuration changes to your Vercel project.

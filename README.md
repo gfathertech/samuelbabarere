@@ -88,30 +88,38 @@ To deploy a new version of the backend to Koyeb:
 
 For detailed instructions, see [server/KOYEB_DEPLOYMENT.md](server/KOYEB_DEPLOYMENT.md).
 
-### Frontend Deployment on GitHub Pages
+### Frontend Deployment on Vercel
 
-1. **Build the frontend for production**
+1. **Prepare for Vercel deployment**
+   - The project is already configured with `vercel.json` for proper routing
+   - The API URL in `client/src/config.ts` is set up to connect to the Koyeb backend
+
+2. **Deploy using Vercel Dashboard**
+   - Connect your GitHub/GitLab/Bitbucket repository to Vercel
+   - Set the root directory to `client`
+   - Framework preset: Vite
+   - Build command: `npm run build`
+   - Output directory: `dist`
+   - No environment variables are required (or optionally set `VITE_API_URL` to your Koyeb URL)
+
+3. **Deploy using Vercel CLI**
    ```bash
+   # Install Vercel CLI
+   npm install -g vercel
+   
    # Navigate to client directory
    cd client
    
-   # Build with correct base path for GitHub Pages
-   # Replace 'your-repo-name' with your actual repository name
-   BASE_PATH='/your-repo-name/' npm run build
+   # Deploy to Vercel
+   vercel
    ```
 
-2. **Deploy built files to GitHub Pages**
-   - Use the GitHub Actions workflow in `.github/workflows/deploy-gh-pages.yml`
-   - Alternatively, manually create a branch named `gh-pages`
-   - Copy contents of `client/dist` to the root of this branch
-   - Push the branch to GitHub
-   - Enable GitHub Pages in repository settings, using the `gh-pages` branch
+4. **Custom Domain Setup (Optional)**
+   - In the Vercel dashboard, go to your project settings
+   - Click "Domains" and add your custom domain
+   - Follow Vercel's DNS configuration instructions
 
-3. **Verify the deployment**
-   - Your site should be available at `https://yourusername.github.io/your-repo-name/`
-   - The frontend is configured to connect to the Koyeb backend automatically in production
-
-For more detailed instructions, see [GitHub Pages Deployment Guide](https://docs.github.com/en/pages/getting-started-with-github-pages).
+For detailed instructions, see [VERCEL_DEPLOYMENT_GUIDE.md](VERCEL_DEPLOYMENT_GUIDE.md) and [API_URL_SETUP.md](API_URL_SETUP.md).
 
 ## License
 

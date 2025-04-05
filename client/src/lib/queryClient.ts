@@ -23,7 +23,7 @@ export function getFullApiUrl(path: string): string {
     return path;
   }
   
-  // Handle production environment (GitHub Pages deployment)
+  // Handle production environment (Vercel deployment)
   if (import.meta.env.PROD) {
     // Strip any trailing slashes from the API_URL
     const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;

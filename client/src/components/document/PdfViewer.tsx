@@ -223,7 +223,7 @@ function PdfViewer({ content }: PdfViewerProps) {
               <li>Try refreshing the page or coming back later</li>
               <li>Check if the document still exists in your library</li>
               {import.meta.env.PROD && (
-                <li>If this persists, our backend service may need to be restarted</li>
+                <li>If this persists, check that the Koyeb backend URL in config.ts is correct</li>
               )}
             </ul>
           )}
