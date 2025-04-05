@@ -15,30 +15,34 @@ export function getFullApiUrl(path: string): string {
   // For debugging
   console.log('getFullApiUrl input:', path);
   
-  // Already a full URL
+  // Already a full URL - return as is
   if (path.startsWith('http')) {
     return path;
   }
   
-  // Use API_URL from config for production environment
+  // Handle production environment (GitHub Pages deployment)
   if (import.meta.env.PROD) {
-    // If path already includes /api, remove it to avoid duplication
-    // since API_URL already contains /api suffix
+    // Use API_URL from config which should point to Koyeb backend
+    const koyebBaseUrl = API_URL.endsWith('/api') 
+      ? API_URL 
+      : `${API_URL}${API_URL.endsWith('/') ? '' : '/'}api`;
+      
+    // If path already includes /api, extract the actual endpoint path
     if (path.startsWith('/api/')) {
-      const apiPath = path.substring(4); // Remove /api prefix
-      const result = `${API_URL}${apiPath}`;
-      console.log('Production API URL (with /api in path):', result);
+      const apiPath = path.substring(5); // Remove /api/ prefix (including the trailing slash)
+      const result = `${koyebBaseUrl}/${apiPath}`;
+      console.log('Production API URL (with /api/ in path):', result);
       return result;
     }
     
-    // Ensure path starts with /
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-    const result = `${API_URL}${normalizedPath}`;
+    // No /api prefix - normalize path and add to Koyeb URL
+    const normalizedPath = path.startsWith('/') ? path.substring(1) : path;
+    const result = `${koyebBaseUrl}/${normalizedPath}`;
     console.log('Production API URL:', result);
     return result;
   } 
   
-  // Development environment
+  // Development environment - use relative paths
   else {
     // If path already includes /api, keep it as is
     if (path.startsWith('/api/')) {

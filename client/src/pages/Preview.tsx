@@ -9,7 +9,7 @@ import PreviewSkeleton from "@/components/document/PreviewSkeleton";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useToast } from "@/hooks/use-toast";
 import { getFullApiUrl } from "../lib/queryClient";
-import { BASE_URL } from "../config";
+import { BASE_URL, API_URL } from "../config";
 
 const PdfViewer = lazy(() => import('@/components/document/PdfViewer'));
 const DocumentPreview = lazy(() => import('@/components/document/DocumentPreviewFixed'));
@@ -71,6 +71,11 @@ export default function Preview() {
         // Use direct path with /api prefix to ensure correct URL construction
         const apiUrl = getFullApiUrl(`/api/documents/${id}/preview`);
         console.log('Preview: Making API request to', apiUrl);
+        
+        // Log environment info for debugging
+        console.log('Environment:', import.meta.env.PROD ? 'Production' : 'Development');
+        console.log('API_URL from config:', API_URL);
+        console.log('BASE_URL from config:', BASE_URL);
         
         // Add mode: 'cors' to ensure CORS is properly handled
         const response = await fetch(apiUrl, {
@@ -178,30 +183,41 @@ export default function Preview() {
         animate={{ opacity: 1, y: 0 }}
         className="min-h-screen bg-background flex flex-col items-center justify-center p-4"
       >
-        <Card className="w-full max-w-lg">
+        <Card className="w-full max-w-lg shadow-lg border-red-100">
           <CardContent className="flex flex-col items-center p-6">
             <FileIcon fileType={previewData?.type || ''} size={40} />
             <h2 className="text-xl font-semibold mb-2">Document Preview Unavailable</h2>
-            <p className="text-gray-500 mb-4 text-center">{error || "The document couldn't be previewed."}</p>
+            <p className="text-gray-600 mb-4 text-center">{error || "The document couldn't be previewed."}</p>
+            <div className="bg-pink-50 p-3 rounded-md mb-4 w-full">
+              <p className="text-sm text-pink-800">
+                <strong>Note:</strong> This happens sometimes when connecting to our document server. 
+                Please try the following:
+              </p>
+              <ul className="text-sm text-pink-700 list-disc pl-5 mt-1">
+                <li>Click the "Back" button and try viewing the document again</li>
+                <li>Try downloading the document instead</li>
+                <li>Check your internet connection</li>
+              </ul>
+            </div>
             <div className="flex flex-wrap gap-2 justify-center">
               <Button 
                 variant="outline" 
                 onClick={() => navigate(`${BASE_URL}documents`)}
-                className="whitespace-nowrap"
+                className="whitespace-nowrap border-gray-300"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Documents
               </Button>
               <Button 
                 variant="outline"
                 onClick={clearAuthAndNavigateHome}
-                className="text-pink-600 hover:text-pink-700 whitespace-nowrap"
+                className="text-pink-600 hover:text-pink-700 whitespace-nowrap border-pink-200"
               >
                 Back to Home
               </Button>
               {docId && (
                 <Button 
                   onClick={() => window.open(getFullApiUrl(`/api/documents/${docId}/download`), '_blank')}
-                  className="bg-pink-600 hover:bg-pink-700 whitespace-nowrap"
+                  className="bg-pink-600 hover:bg-pink-700 text-white whitespace-nowrap"
                 >
                   <Download className="mr-2 h-4 w-4" /> Download File
                 </Button>
