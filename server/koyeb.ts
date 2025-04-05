@@ -1,5 +1,4 @@
-import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
+
 import dotenv from 'dotenv';
 import cors from 'cors';
 
@@ -10,30 +9,26 @@ dotenv.config();
 import "./db";
 
 const app = express();
-// Set up CORS to allow requests from GitHub Pages
+
+// Enable CORS for all origins (for development)
 app.use(cors({
-  origin: [
-    'https://samuelbabarere.github.io', 
-    'https://portfolio.samuelbabarere.net',
-    'http://localhost:5000', 
-    'http://localhost:3000'
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Increase JSON payload size limit for file uploads (base64 encoded files can be large)
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-app.use((req: Request, res: Response, next: NextFunction) => {
+// Simple logging middleware
+app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
   const originalResJson = res.json;
-  res.json = function (bodyJson: any, ...args: any[]) {
+  res.json = function (bodyJson, ...args) {
     capturedJsonResponse = bodyJson;
     return originalResJson.apply(res, [bodyJson, ...args]);
   };
@@ -60,25 +55,28 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 (async () => {
   const server = await registerRoutes(app);
 
+  // Error handling middleware
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
+    console.error(err);
   });
 
-  // For production deployment on Koyeb, we only need the API routes
-  // No need for Vite setup or static file serving since frontend is on GitHub Pages
+  // 404 handling for API routes
+  app.use('/api/*', (_req, res) => {
+    res.status(404).json({ error: 'API endpoint not found' });
+  });
 
-  // ALWAYS serve the app on port 5000
-  // this serves the API endpoints only.
-  const port = 5000;
+  // Start the server
+  const port = process.env.PORT || 3000;
   server.listen({
     port,
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    console.log(`API server running on port ${port}`);
+    console.log(`API server running on http://0.0.0.0:${port}`);
+    console.log(`API is available at http://0.0.0.0:${port}/api`);
   });
 })();

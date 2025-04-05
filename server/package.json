@@ -5,10 +5,8 @@
   "license": "MIT",
   "scripts": {
     "dev": "tsx index.ts",
-    "build": "esbuild index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
-    "build:koyeb": "esbuild koyeb.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "build": "tsx koyeb.ts",
     "start": "NODE_ENV=production node dist/index.js",
-    "start:koyeb": "NODE_ENV=production node dist/koyeb.js",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
