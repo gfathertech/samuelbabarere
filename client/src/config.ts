@@ -18,3 +18,13 @@ export const API_URL = import.meta.env.PROD
 export const BASE_URL = import.meta.env.PROD 
   ? '/samuelbabarere/' 
   : '/';
+
+/**
+ * IMPORTANT: When deploying to Koyeb, you'll get a new URL. 
+ * Replace the URL above with your new Koyeb URL + '/api'
+ * 
+ * Example:
+ * export const API_URL = import.meta.env.PROD 
+ *   ? 'https://your-new-app-name.koyeb.app/api' 
+ *   : '/api';
+ */

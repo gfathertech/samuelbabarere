@@ -260,6 +260,7 @@ storage.initializeAdminPassword("50100150").then(() => console.log("\u2705 Admin
 import { z as z2 } from "zod";
 import nodemailer from "nodemailer";
 import cookieParser from "cookie-parser";
+import mongoose from "mongoose";
 var contactSchema = z2.object({
   name: z2.string().min(1, "Name is required"),
   email: z2.string().email("Invalid email format"),
@@ -269,6 +270,14 @@ async function registerRoutes(app2) {
   app2.use(cookieParser());
   app2.get("/api/status", (_req, res) => {
     res.json({ status: "operational", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  });
+  app2.get("/api/health", (_req, res) => {
+    res.json({
+      status: "healthy",
+      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+      environment: process.env.NODE_ENV || "development",
+      mongodb: mongoose.connection.readyState === 1 ? "connected" : "disconnected"
+    });
   });
   app2.post("/api/contact", async (req, res) => {
     try {
@@ -645,7 +654,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 
 // db.ts
-import mongoose from "mongoose";
+import mongoose2 from "mongoose";
 var MAX_RETRIES = 3;
 var RETRY_INTERVAL = 5e3;
 var retryCount = 0;
@@ -669,7 +678,7 @@ var connectWithRetry = async () => {
   console.log(`\u{1F50D} MONGODB_URI starts with: ${process.env.MONGODB_URI.substring(0, 15)}...`);
   try {
     console.log(`Attempting to connect to MongoDB (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
-    await mongoose.connect(process.env.MONGODB_URI, {
+    await mongoose2.connect(process.env.MONGODB_URI, {
       serverSelectionTimeoutMS: 5e3,
       socketTimeoutMS: 3e4,
       connectTimeoutMS: 1e4,
@@ -692,13 +701,13 @@ var connectWithRetry = async () => {
     }
   }
 };
-mongoose.connection.on("connected", () => {
+mongoose2.connection.on("connected", () => {
   console.log("\u{1F504} Mongoose connected to MongoDB server");
 });
-mongoose.connection.on("error", (err) => {
+mongoose2.connection.on("error", (err) => {
   console.error("\u274C Mongoose connection error:", err);
 });
-mongoose.connection.on("disconnected", () => {
+mongoose2.connection.on("disconnected", () => {
   console.log("\u26A0\uFE0F Mongoose disconnected from MongoDB server");
   if (retryCount === 0) {
     console.log("\u{1F504} Attempting reconnection...");
@@ -706,24 +715,41 @@ mongoose.connection.on("disconnected", () => {
   }
 });
 connectWithRetry();
-var db = mongoose.connection;
+var db = mongoose2.connection;
 
 // koyeb.ts
 dotenv.config();
 var app = express();
 app.use(cors({
-  origin: [
-    "https://samuelbabarere.github.io",
-    "https://portfolio.samuelbabarere.net",
-    "http://localhost:5000",
-    "http://localhost:3000"
-  ],
+  // Accept all origins for now, to make testing easier
+  // In a real production environment, you'd want to restrict this
+  origin: function(origin, callback) {
+    const allowedOrigins = [
+      "https://samuelbabarere.github.io",
+      "https://portfolio.samuelbabarere.net",
+      "http://localhost:5000",
+      "http://localhost:3000"
+    ];
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log("CORS request from origin:", origin);
+      callback(null, true);
+    }
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
 }));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+app.use((req, res, next) => {
+  console.log(`Request from origin: ${req.headers.origin || "no origin"} to ${req.method} ${req.path}`);
+  if (req.method === "OPTIONS") {
+    console.log("Handling OPTIONS request with headers:", JSON.stringify(req.headers));
+  }
+  next();
+});
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;

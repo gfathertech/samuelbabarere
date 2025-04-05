@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { z } from "zod";
 import nodemailer from 'nodemailer';
 import cookieParser from 'cookie-parser';
+import mongoose from 'mongoose';
 import { Document } from "./schema"; // Import Document model for all-documents endpoint
 
 const contactSchema = z.object({
@@ -18,6 +19,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Simple status endpoint
   app.get("/api/status", (_req, res) => {
     res.json({ status: "operational", timestamp: new Date().toISOString() });
+  });
+  
+  // Health check endpoint - useful for Koyeb to verify the service is running
+  app.get("/api/health", (_req, res) => {
+    res.json({ 
+      status: "healthy", 
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      mongodb: (mongoose.connection.readyState === 1) ? 'connected' : 'disconnected'
+    });
   });
   app.post("/api/contact", async (req, res) => {
     try {

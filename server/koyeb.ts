@@ -12,14 +12,27 @@ import "./db";
 
 const app = express();
 
-// Set up CORS to allow requests from GitHub Pages
+// Set up CORS to allow requests from GitHub Pages and other allowed origins
 app.use(cors({
-  origin: [
-    'https://samuelbabarere.github.io', 
-    'https://portfolio.samuelbabarere.net',
-    'http://localhost:5000', 
-    'http://localhost:3000'
-  ],
+  // Accept all origins for now, to make testing easier
+  // In a real production environment, you'd want to restrict this
+  origin: function(origin, callback) {
+    const allowedOrigins = [
+      'https://samuelbabarere.github.io', 
+      'https://portfolio.samuelbabarere.net',
+      'http://localhost:5000', 
+      'http://localhost:3000'
+    ];
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('CORS request from origin:', origin);
+      // Still allow it for now, but log for debugging
+      callback(null, true);
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -29,14 +42,26 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// Debugging middleware for CORS and options requests
+app.use((req: Request, res: Response, next: NextFunction) => {
+  // Log all request origins to debug CORS issues
+  console.log(`Request from origin: ${req.headers.origin || 'no origin'} to ${req.method} ${req.path}`);
+  
+  if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS request with headers:', JSON.stringify(req.headers));
+  }
+  
+  next();
+});
+
 // Simple logging middleware
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
   const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
+  res.json = function (bodyJson: any, ...args: any[]) {
     capturedJsonResponse = bodyJson;
     return originalResJson.apply(res, [bodyJson, ...args]);
   };
@@ -73,7 +98,7 @@ app.use((req, res, next) => {
   });
 
   // 404 handling for API routes
-  app.use('/api/*', (_req, res) => {
+  app.use('/api/*', (_req: Request, res: Response) => {
     res.status(404).json({ error: 'API endpoint not found' });
   });
 
