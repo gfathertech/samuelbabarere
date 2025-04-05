@@ -12,7 +12,7 @@ import { getFullApiUrl } from "../lib/queryClient";
 import { BASE_URL } from "../config";
 
 const PdfViewer = lazy(() => import('@/components/document/PdfViewer'));
-const DocumentPreview = lazy(() => import('@/components/document/DocumentPreview'));
+const DocumentPreview = lazy(() => import('@/components/document/DocumentPreviewFixed'));
 
 interface DocumentPreview {
   type: string;
@@ -68,9 +68,19 @@ export default function Preview() {
         console.log('Preview: Fetching document data for ID:', id);
 
         // Attempt to fetch document preview data from API
-        const apiUrl = getFullApiUrl(`/documents/${id}/preview`);
+        // Use direct path with /api prefix to ensure correct URL construction
+        const apiUrl = getFullApiUrl(`/api/documents/${id}/preview`);
         console.log('Preview: Making API request to', apiUrl);
-        const response = await fetch(apiUrl);
+        
+        // Add mode: 'cors' to ensure CORS is properly handled
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+          credentials: 'include',
+          mode: 'cors'
+        });
         
         // Handle HTTP errors
         if (!response.ok) {
@@ -190,7 +200,7 @@ export default function Preview() {
               </Button>
               {docId && (
                 <Button 
-                  onClick={() => window.open(getFullApiUrl(`/documents/${docId}/download`), '_blank')}
+                  onClick={() => window.open(getFullApiUrl(`/api/documents/${docId}/download`), '_blank')}
                   className="bg-pink-600 hover:bg-pink-700 whitespace-nowrap"
                 >
                   <Download className="mr-2 h-4 w-4" /> Download File
@@ -230,7 +240,7 @@ export default function Preview() {
           {docId && (
             <Button 
               variant="outline"
-              onClick={() => window.open(getFullApiUrl(`/documents/${docId}/download`), '_blank')}
+              onClick={() => window.open(getFullApiUrl(`/api/documents/${docId}/download`), '_blank')}
               className="flex-shrink-0 flex items-center text-pink-600 border-pink-200 hover:text-pink-700 hover:bg-pink-50 whitespace-nowrap"
             >
               <Download className="mr-2 h-4 w-4" /> Download File

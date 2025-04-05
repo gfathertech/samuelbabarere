@@ -185,7 +185,7 @@ function DocumentPreviewContent({ doc }: { doc: Document }) {
     const fetchPreview = async () => {
       try {
         setLoading(true);
-        const response = await apiRequest('GET', `/documents/${doc._id}/preview`);
+        const response = await apiRequest('GET', `/api/documents/${doc._id}/preview`);
         const data = await response.json();
         setPreviewData(data);
       } catch (err) {
@@ -332,7 +332,7 @@ function DocumentPreviewContent({ doc }: { doc: Document }) {
                 <Eye className="w-3.5 h-3.5 mr-1" /> Preview
               </a>
               <a 
-                href={getFullApiUrl(`/documents/${doc._id}/download`)}
+                href={getFullApiUrl(`/api/documents/${doc._id}/download`)}
                 className="text-xs flex items-center text-pink-600 hover:text-pink-800 bg-white px-3 py-1 rounded-full shadow-sm"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -463,7 +463,7 @@ export default function Documents() {
     try {
       const response = await apiRequest(
         'POST', 
-        `/documents/${documentToShare._id}/share`, 
+        `/api/documents/${documentToShare._id}/share`, 
         { expirationDays: sharingExpiration }
       );
       
@@ -504,7 +504,7 @@ export default function Documents() {
     
     setIsSharing(true);
     try {
-      const response = await apiRequest('DELETE', `/documents/${documentToShare._id}/share`);
+      const response = await apiRequest('DELETE', `/api/documents/${documentToShare._id}/share`);
       setShareLink("");
       
       toast({
@@ -539,7 +539,7 @@ export default function Documents() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await apiRequest('DELETE', `/documents/${id}`);
+      const response = await apiRequest('DELETE', `/api/documents/${id}`);
       return response.json();
     },
     onSuccess: () => {
@@ -561,7 +561,7 @@ export default function Documents() {
   const { data: documents = [] } = useQuery<Document[]>({
     queryKey: ['/api/documents', selectedUser],
     queryFn: async () => {
-      const response = await apiRequest('GET', `/documents?user=${selectedUser}`);
+      const response = await apiRequest('GET', `/api/documents?user=${selectedUser}`);
       return response.json();
     },
     enabled: isAuthenticated,
@@ -683,8 +683,8 @@ export default function Documents() {
           transition={{ duration: 0.5 }}
           className="floating"
         >
-          <Card className="w-full max-w-md bg-white/80 backdrop-blur-sm border-pink-100 dark:border-purple-500/20 shadow-lg dark:shadow-purple-500/10 overflow-hidden">
-            <div className="absolute inset-0 dark:bg-gradient-to-br dark:from-purple-900/30 dark:via-slate-900/50 dark:to-pink-900/30 dark:backdrop-blur-md z-0"></div>
+          <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm border-pink-100 dark:border-purple-500/20 shadow-lg dark:shadow-purple-500/10 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-100/40 via-white/60 to-pink-100/40 dark:bg-gradient-to-br dark:from-purple-900/30 dark:via-slate-900/50 dark:to-pink-900/30 dark:backdrop-blur-md z-0"></div>
             <CardHeader className="relative z-10">
               <motion.div 
                 className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-400/20 to-pink-400/5 rounded-full blur-3xl -translate-y-12 translate-x-12 z-0" 
@@ -759,8 +759,8 @@ export default function Documents() {
       </div>
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Upload Section */}
-        <Card className="bg-white/80 backdrop-blur-sm border-pink-100 dark:border-purple-500/20 dark:bg-slate-900/60 dark:shadow-purple-500/10 relative overflow-hidden">
-          <div className="absolute inset-0 dark:bg-gradient-to-br dark:from-purple-900/20 dark:via-slate-900/30 dark:to-pink-900/20 dark:backdrop-blur-md z-0"></div>
+        <Card className="bg-white/90 backdrop-blur-sm border-pink-100 dark:border-purple-500/20 dark:bg-slate-900/60 dark:shadow-purple-500/10 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-100/40 via-white/60 to-pink-100/40 dark:bg-gradient-to-br dark:from-purple-900/20 dark:via-slate-900/30 dark:to-pink-900/20 dark:backdrop-blur-md z-0"></div>
           <motion.div 
             className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-purple-400/10 to-pink-400/5 rounded-full blur-3xl -translate-y-32 translate-x-32 z-0" 
             animate={{ 
@@ -838,15 +838,15 @@ export default function Documents() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <Card className="hover:shadow-lg transition-all duration-300 bg-white/80 backdrop-blur-sm border-pink-100 dark:border-purple-500/20 dark:bg-slate-900/50 dark:shadow-purple-500/10 relative overflow-hidden group hover:-translate-y-1">
-                <div className="absolute inset-0 dark:bg-gradient-to-br dark:from-purple-900/20 dark:via-slate-900/30 dark:to-pink-900/20 dark:backdrop-blur-md z-0 dark:opacity-80 group-hover:dark:opacity-100 transition-opacity duration-300"></div>
+              <Card className="hover:shadow-lg transition-all duration-300 bg-white/90 backdrop-blur-sm border-pink-100 dark:border-purple-500/20 dark:bg-slate-900/50 dark:shadow-purple-500/10 relative overflow-hidden group hover:-translate-y-1">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-100/40 via-white/60 to-pink-100/40 dark:bg-gradient-to-br dark:from-purple-900/20 dark:via-slate-900/30 dark:to-pink-900/20 dark:backdrop-blur-md z-0 opacity-90 group-hover:opacity-100 dark:opacity-80 group-hover:dark:opacity-100 transition-opacity duration-300"></div>
                 <CardContent className="p-4 relative z-10">
                   <div className="flex items-center justify-between mb-2">
                     <HoverCard>
                       <HoverCardTrigger asChild>
                         <h3 className="font-semibold text-gray-900 dark:text-purple-200 cursor-pointer hover:text-pink-500 dark:hover:text-pink-300 transition-colors">{doc.name}</h3>
                       </HoverCardTrigger>
-                      <HoverCardContent className="w-96 bg-white/95 backdrop-blur-sm border-pink-100 dark:bg-slate-900/80 dark:border-purple-500/20 dark:backdrop-blur-md p-0 overflow-hidden">
+                      <HoverCardContent className="w-96 bg-white/95 backdrop-blur-sm border-pink-100 dark:bg-slate-900/80 dark:border-purple-500/20 dark:backdrop-blur-md p-0 overflow-hidden shadow-md">
                         <div className="p-4">
                           <div className="flex justify-between items-start">
                             <div className="space-y-1">
@@ -878,7 +878,7 @@ export default function Documents() {
                           </p>
                           <div className="mt-3 flex justify-between">
                             <a
-                              href={getFullApiUrl(`/documents/${doc._id}/download`)}
+                              href={getFullApiUrl(`/api/documents/${doc._id}/download`)}
                               className="text-xs flex items-center text-blue-600 hover:text-blue-800 dark:text-purple-300 dark:hover:text-pink-300"
                               target="_blank"
                               rel="noopener noreferrer"
@@ -905,7 +905,7 @@ export default function Documents() {
                         </Link>
                       )}
                       <a
-                        href={getFullApiUrl(`/documents/${doc._id}/download`)}
+                        href={getFullApiUrl(`/api/documents/${doc._id}/download`)}
                         className="text-pink-600 hover:text-pink-700 dark:text-purple-300 dark:hover:text-pink-300 transition-colors"
                         title="Download document"
                         target="_blank"
@@ -956,8 +956,8 @@ export default function Documents() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-md dialog-content dark:bg-slate-900/80 dark:border-purple-500/30 dark:backdrop-blur-lg relative overflow-hidden">
-          <div className="absolute inset-0 dark:bg-gradient-to-br dark:from-purple-900/20 dark:via-slate-900/40 dark:to-pink-900/20 dark:backdrop-blur-md z-0"></div>
+        <DialogContent className="sm:max-w-md dialog-content bg-white/95 backdrop-blur-sm border-pink-100 dark:bg-slate-900/80 dark:border-purple-500/30 dark:backdrop-blur-lg relative overflow-hidden shadow-lg">
+          <div className="absolute inset-0 bg-gradient-to-br from-red-100/30 via-white/70 to-pink-100/30 dark:bg-gradient-to-br dark:from-purple-900/20 dark:via-slate-900/40 dark:to-pink-900/20 dark:backdrop-blur-md z-0"></div>
           
           <motion.div 
             className="absolute top-10 left-10 w-64 h-64 bg-gradient-to-br from-red-400/10 to-pink-400/5 rounded-full blur-3xl -translate-x-32 -translate-y-32 z-0" 
@@ -1027,8 +1027,8 @@ export default function Documents() {
       
       {/* Share Dialog */}
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen} modal={true}>
-        <DialogContent className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-purple-500/30 shadow-xl dark:shadow-purple-500/10 rounded-lg overflow-hidden max-h-[90vh] max-w-md mx-auto">
-          <div className="absolute inset-0 dark:bg-gradient-to-br dark:from-purple-900/20 dark:via-slate-900/40 dark:to-pink-900/20 z-0"></div>
+        <DialogContent className="sm:max-w-md dialog-content bg-white/95 backdrop-blur-sm border-pink-100 dark:bg-slate-900/80 dark:border-purple-500/30 dark:backdrop-blur-lg relative overflow-hidden shadow-lg max-h-[90vh]">
+          <div className="absolute inset-0 bg-gradient-to-br from-green-100/30 via-white/70 to-blue-100/30 dark:bg-gradient-to-br dark:from-purple-900/20 dark:via-slate-900/40 dark:to-green-900/20 dark:backdrop-blur-md z-0"></div>
           
           <motion.div 
             className="absolute top-10 left-10 w-64 h-64 bg-gradient-to-br from-green-400/10 to-blue-400/5 rounded-full blur-3xl -translate-x-32 -translate-y-32 z-0" 

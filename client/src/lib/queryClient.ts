@@ -12,27 +12,46 @@ async function throwIfResNotOk(res: Response) {
  * Helper to generate full API URLs in production or use relative paths in development
  */
 export function getFullApiUrl(path: string): string {
+  // For debugging
+  console.log('getFullApiUrl input:', path);
+  
+  // Already a full URL
   if (path.startsWith('http')) {
-    return path; // Already a full URL
+    return path;
   }
   
-  // If path already has /api, don't add it again
-  if (path.startsWith('/api/')) {
-    // In production environment, make sure we're using the full Koyeb URL
-    if (import.meta.env.PROD) {
-      // This strips off the '/api' prefix
-      const apiPath = path.substring(4);
-      // This ensures we have a full URL to the Koyeb backend
-      return `${API_URL}${apiPath}`;
-    } else {
-      // In development, keep the path as is
+  // Use API_URL from config for production environment
+  if (import.meta.env.PROD) {
+    // If path already includes /api, remove it to avoid duplication
+    // since API_URL already contains /api suffix
+    if (path.startsWith('/api/')) {
+      const apiPath = path.substring(4); // Remove /api prefix
+      const result = `${API_URL}${apiPath}`;
+      console.log('Production API URL (with /api in path):', result);
+      return result;
+    }
+    
+    // Ensure path starts with /
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    const result = `${API_URL}${normalizedPath}`;
+    console.log('Production API URL:', result);
+    return result;
+  } 
+  
+  // Development environment
+  else {
+    // If path already includes /api, keep it as is
+    if (path.startsWith('/api/')) {
+      console.log('Development API URL (with /api):', path);
       return path;
     }
+    
+    // Add /api prefix for paths that don't have it
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    const result = `/api${normalizedPath}`;
+    console.log('Development API URL:', result);
+    return result;
   }
-  
-  // Normal path, ensure it starts with /
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return import.meta.env.PROD ? `${API_URL}${normalizedPath}` : `/api${normalizedPath}`;
 }
 
 /**

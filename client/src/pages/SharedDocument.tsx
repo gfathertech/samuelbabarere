@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRoute, useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
-import DocumentPreview from "@/components/document/DocumentPreview";
+import DocumentPreview from "@/components/document/DocumentPreviewFixed";
 import PreviewSkeleton from '@/components/document/PreviewSkeleton';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, ArrowLeft, Download, Clock, ExternalLink } from 'lucide-react';
@@ -39,7 +39,7 @@ export default function SharedDocument() {
   const { data, error, isLoading, isError } = useQuery<SharedDocumentPreview>({
     queryKey: ['/api/shared', token],
     queryFn: async () => {
-      const response = await apiRequest('GET', `/shared/${token}`);
+      const response = await apiRequest('GET', `/api/shared/${token}`);
       return response.json();
     },
     enabled: !!token,
@@ -114,12 +114,15 @@ export default function SharedDocument() {
           <title>Loading Shared Document...</title>
         </Helmet>
         <h1 className="text-2xl font-bold mb-6">Loading Shared Document...</h1>
-        <div className="border rounded-lg overflow-hidden shadow-md bg-white p-4">
+        <div className="border border-pink-100 rounded-lg overflow-hidden shadow-md bg-white/90 backdrop-blur-sm p-4 relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-100/30 via-white/60 to-pink-100/30 dark:bg-gradient-to-br dark:from-purple-900/20 dark:via-slate-900/30 dark:to-pink-900/20 dark:backdrop-blur-md z-0"></div>
+          <div className="relative z-10">
           <div className="flex items-center justify-center mb-4">
             <div className="h-6 w-6 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mr-2"></div>
             <p>Fetching document details...</p>
           </div>
           <PreviewSkeleton />
+          </div>
         </div>
       </div>
     );
@@ -218,17 +221,22 @@ export default function SharedDocument() {
       )}
       
       <ErrorBoundary>
-        <div className="border rounded-lg overflow-hidden shadow-lg bg-white">
+        <div className="border border-pink-100 rounded-lg overflow-hidden shadow-lg bg-white/90 backdrop-blur-sm relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-100/30 via-white/60 to-pink-100/30 dark:bg-gradient-to-br dark:from-purple-900/20 dark:via-slate-900/30 dark:to-pink-900/20 dark:backdrop-blur-md z-0"></div>
+          <div className="relative z-10">
           <DocumentPreview 
             type={data.type} 
             content={data.content}
             name={data.name} 
             docId={data._id}
           />
+          </div>
         </div>
       </ErrorBoundary>
       
-      <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+      <div className="mt-6 p-4 bg-white/90 backdrop-blur-sm rounded-lg border border-pink-100 relative shadow-md">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-100/30 via-white/60 to-pink-100/30 dark:bg-gradient-to-br dark:from-purple-900/20 dark:via-slate-900/30 dark:to-pink-900/20 dark:backdrop-blur-md z-0"></div>
+        <div className="relative z-10">
         <h3 className="text-sm font-medium mb-2">Document Information</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
           <div>
@@ -246,6 +254,7 @@ export default function SharedDocument() {
             </div>
           )}
         </div>
+        </div>
       </div>
       
       <div className="mt-6 flex justify-center gap-4">
@@ -258,7 +267,7 @@ export default function SharedDocument() {
         </Button>
         
         <a
-          href={getFullApiUrl(`/shared/${token}/download`)}
+          href={getFullApiUrl(`/api/shared/${token}/download`)}
           target="_blank"
           rel="noopener noreferrer"
         >

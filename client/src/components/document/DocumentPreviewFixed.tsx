@@ -120,7 +120,7 @@ export default function DocumentPreview({ type, content, name, docId, error: pro
                     asChild
                     className="text-xs flex items-center text-blue-600 hover:text-blue-800 bg-white whitespace-nowrap"
                   >
-                    <a href={`${API_URL}/documents/${docId}/download`} download={name} className="px-3 py-1.5">
+                    <a href={getFullApiUrl(`/api/documents/${docId}/download`)} download={name} className="px-3 py-1.5">
                       <Download className="w-3.5 h-3.5 mr-1" /> Download
                     </a>
                   </Button>
@@ -174,7 +174,7 @@ export default function DocumentPreview({ type, content, name, docId, error: pro
                     asChild
                     className="text-xs flex items-center text-blue-600 hover:text-blue-800 bg-white whitespace-nowrap"
                   >
-                    <a href={`${API_URL}/documents/${docId}/download`} download={name} className="px-3 py-1.5">
+                    <a href={getFullApiUrl(`/api/documents/${docId}/download`)} download={name} className="px-3 py-1.5">
                       <Download className="w-3.5 h-3.5 mr-1" /> Download
                     </a>
                   </Button>
@@ -241,7 +241,7 @@ export default function DocumentPreview({ type, content, name, docId, error: pro
                     asChild
                     className="text-xs flex items-center text-blue-600 hover:text-blue-800 bg-white whitespace-nowrap"
                   >
-                    <a href={`${API_URL}/documents/${docId}/download`} download={name} className="px-3 py-1.5">
+                    <a href={getFullApiUrl(`/api/documents/${docId}/download`)} download={name} className="px-3 py-1.5">
                       <Download className="w-3.5 h-3.5 mr-1" /> Download
                     </a>
                   </Button>
@@ -294,7 +294,7 @@ export default function DocumentPreview({ type, content, name, docId, error: pro
                   asChild
                   className="text-xs flex items-center text-blue-600 hover:text-blue-800 bg-white whitespace-nowrap"
                 >
-                  <a href={`${API_URL}/documents/${docId}/download`} download={name} className="px-3 py-1.5">
+                  <a href={getFullApiUrl(`/api/documents/${docId}/download`)} download={name} className="px-3 py-1.5">
                     <Download className="w-3.5 h-3.5 mr-1" /> Download
                   </a>
                 </Button>
@@ -319,7 +319,7 @@ export default function DocumentPreview({ type, content, name, docId, error: pro
           asChild
           className="mt-2 whitespace-nowrap"
         >
-          <a href={`${API_URL}/documents/${docId}/download`} download={name} className="px-3 py-1.5">
+          <a href={getFullApiUrl(`/api/documents/${docId}/download`)} download={name} className="px-3 py-1.5">
             <Download className="w-4 h-4 mr-1" />
             Download
           </a>
