@@ -1,52 +1,96 @@
-# Document Preview Fix Summary
+# Document Preview Functionality Fixes
 
-## Issue
-Users were encountering "Document Preview Unavailable - Server Error" when attempting to view documents, particularly when the frontend was hosted on GitHub Pages while the backend was on Koyeb.
+This document summarizes the fixes implemented to address document preview issues in the application.
 
-## Root Causes Identified
-1. **API URL Construction**: The `getFullApiUrl` function wasn't correctly handling paths that already included `/api` prefix when building the full Koyeb URL.
-2. **Incorrect API Base URL**: The API_URL in config.ts included `/api` at the end, causing path duplication.
-3. **Error Handling**: The error messages weren't user-friendly enough to guide users when preview failed.
+## Issues Addressed
 
-## Changes Made
+1. **URL Construction**: Fixed API URL construction for document preview and download endpoints
+2. **Error Handling**: Enhanced error detection, display, and troubleshooting information
+3. **PDF Rendering**: Improved PDF viewer component with better error handling and timeout protection
+4. **Data Validation**: Added validation checks to ensure content is properly processed
 
-### 1. Fixed API URL Construction (client/src/lib/queryClient.ts)
-- Completely rewrote the `getFullApiUrl` function to properly handle API paths
-- Added better logic for constructing URLs based on environment (dev vs prod)
-- Improved handling of paths that already contain `/api/` prefix
-- Added more detailed logging for easier debugging
+## Technical Implementation Details
 
-### 2. Updated API URL Configuration (client/src/config.ts)
-- Modified the production API URL to use the base Koyeb URL without `/api` suffix
-- This allows the `getFullApiUrl` function to handle path construction more reliably
+### 1. Enhanced PDF Viewer Component
 
-### 3. Enhanced Error Handling
-- **Preview.tsx**: Added more detailed error messages with troubleshooting steps
-- **PdfViewer.tsx**: Improved error display to distinguish between connection issues and file parsing problems
-- Added conditional messaging based on error types to guide users
+The PDF viewer component (`client/src/components/document/PdfViewer.tsx`) has been significantly improved:
 
-### 4. Enhanced UI Experience
-- Improved styling of error messages for better readability
-- Added proper loading states during preview attempts
-- Made buttons more distinctive in error states for better user guidance
+- **Error Categorization**: Added intelligent categorization of errors into server, parsing, password, timeout, and network types
+- **Error Recovery**: Added specific troubleshooting suggestions for each error type
+- **Content Validation**: Enhanced validation to detect when HTML is received instead of PDF data
+- **Timeout Protection**: Added timeout handling to prevent infinite loading states
+- **Detailed Logging**: Added comprehensive logging to help diagnose issues
 
-### 5. Additional Debugging
-- Added extensive console logging for better debugging
-- Added environment information logging to track API URL construction
+```typescript
+// Example of improved error handling with specific error types
+if (error) {
+  // Categorize the error for better user feedback
+  const isServerError = error.includes('server') || 
+                        error.includes('Failed to load');
+  const isParsingError = error.includes('Invalid PDF') || 
+                         error.includes('decode');                        
+  const isPasswordError = error.includes('password protected');
+  
+  // Show appropriate troubleshooting advice based on error type
+  // ...
+}
+```
 
-## Light Mode UI Enhancements
-- Added specific light mode styling for text with pink/purple theme
-- Improved light mode text readability with appropriate contrast
-- Added consistent button and SVG icon styling for both light and dark modes
-- Applied floating animation to both light and dark mode elements for consistency
+### 2. URL Path Handling
 
-## Testing Notes
-- API URL construction has been verified with console logs
-- Cross-domain authentication remains based on localStorage for GitHub Pages compatibility
+We fixed how document preview and download URLs are constructed:
 
-## Deployment Instructions
-1. Push these changes to the main branch to trigger the GitHub Pages workflow
-2. The GitHub Pages deployment will automatically use the correct Koyeb backend URL
-3. No changes are needed on the Koyeb backend deployment
+- Normalized path handling between development and production
+- Fixed inconsistent URL patterns for API endpoints
+- Updated download button URLs to use the correct format
 
-This fix ensures reliable document preview functioning between the GitHub Pages frontend and Koyeb backend.
+```typescript
+// Before: Inconsistent URL pattern
+const apiUrl = getFullApiUrl(`/api/documents/${id}/preview`);
+
+// After: Consistent URL pattern, letting getFullApiUrl handle the /api prefix
+const apiUrl = getFullApiUrl(`/documents/${id}/preview`);
+```
+
+### 3. Advanced PDF Error Detection
+
+Added sophisticated error detection mechanisms:
+
+- HTML content detection when expecting PDF data
+- Empty or too-short content detection
+- Password-protected PDF detection
+- Corrupted PDF detection
+- Timeout detection for large PDFs
+
+```typescript
+// Example of content validation
+if (!content || content.length < 100) {
+  setError('PDF data is empty or too short - possibly a server connection issue');
+} else if (content.startsWith('<!DOCTYPE html>') || content.includes('<html>')) {
+  setError('Received HTML instead of PDF data - server returned an error page');
+}
+```
+
+### 4. Better User Experience
+
+Improved the user experience during errors:
+
+- More specific error messages
+- Visual design improvements for error states
+- Clear troubleshooting steps for users
+- Environment-specific suggestions (development vs. production)
+
+## How to Verify
+
+1. Test document preview functionality with different document types
+2. Try accessing non-existent documents to verify error handling
+3. Check the browser console for detailed error logs
+4. Verify the download functionality works correctly
+
+## Future Maintenance
+
+When making changes to the document preview functionality:
+
+1. Maintain the error categorization system for consistent user experience
+2. Continue using the documented URL patterns for document endpoints
+3. Keep the enhanced logging in place to aid debugging

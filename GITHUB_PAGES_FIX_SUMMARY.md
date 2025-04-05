@@ -1,88 +1,89 @@
 # GitHub Pages Deployment Fixes
 
-This document provides a summary of the fixes implemented to ensure proper functionality when deploying the frontend to GitHub Pages while the backend is running on Koyeb.
+This document summarizes the fixes implemented to make the frontend correctly connect to the backend when deployed on GitHub Pages.
 
-## Navigation Fixes
+## Core Issues Addressed
 
-### 1. Fixed Path in Document Preview Links
+1. **API URL Path Resolution**: Fixed URL construction to correctly handle the backend API endpoints.
+2. **Cross-Origin Resource Sharing (CORS)**: Enhanced CORS handling for cross-domain requests.
+3. **Error Handling**: Improved error handling to provide better feedback on connection issues.
+4. **Document Preview Issues**: Fixed document preview and download functionality.
 
-In `client/src/pages/Documents.tsx`, updated the preview link to include the proper BASE_URL prefix:
+## Technical Implementation Details
 
-```diff
-<Link
--  href={`/preview/${doc._id}`}
-+  href={`${BASE_URL}preview/${doc._id}`}
-  className="text-blue-600 hover:text-blue-700 dark:text-purple-300 dark:hover:text-pink-300 transition-colors"
-  title="Preview document"
->
-```
+### 1. API URL Path Resolution
 
-### 2. Updated API Requests in Preview Component
+The primary issue was correctly constructing API URLs when the frontend is hosted on GitHub Pages while the backend is on Koyeb. We improved the `getFullApiUrl` function in `client/src/lib/queryClient.ts` to:
 
-In `client/src/pages/Preview.tsx`, improved API requests to use `getFullApiUrl` function:
-
-```diff
-- const response = await fetch(`/api/documents/${id}/preview`);
-+ const apiUrl = getFullApiUrl(`/documents/${id}/preview`);
-+ const response = await fetch(apiUrl);
-```
-
-### 3. Fixed Download URLs
-
-Updated download URLs to use `getFullApiUrl` function for both main download buttons:
-
-```diff
-- onClick={() => window.open(`/api/documents/${docId}/download`, '_blank')}
-+ onClick={() => window.open(getFullApiUrl(`/documents/${docId}/download`), '_blank')}
-```
-
-## Configuration Verification
-
-Verified that the following files are properly configured:
-
-1. `client/src/config.ts` - Contains correct API_URL pointing to Koyeb deployment and BASE_URL set to '/samuelbabarere/'
-2. `client/public/404.html` - GitHub Pages SPA redirect configured for '/samuelbabarere/' path
-3. `.github/workflows/deploy-gh-pages.yml` - Properly configured to build and deploy only the client folder
-4. `client/package.json` - Includes correct build:gh-pages script with BASE_PATH set
-5. `client/vite.config.ts` - Properly handles the base path for GitHub Pages deployment
-
-## App Routing
-
-Verified that `client/src/App.tsx` correctly handles routing with the BASE_URL prefix for GitHub Pages deployment:
+- Handle multiple URL formats consistently
+- Properly construct backend URLs in production
+- Maintain relative URLs in development
+- Avoid duplicate `/api` prefixes
+- Add extensive logging for debugging
 
 ```javascript
-function RouterWithBasePath() {
-  // Only create a custom router when we have a non-root base path
-  if (BASE_URL === '/') {
-    return (
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/documents" component={Documents} />
-        <Route path="/preview/:id" component={Preview} />
-        <Route path="/shared/:token" component={SharedDocument} />
-        <Route component={NotFound} />
-      </Switch>
-    );
+export function getFullApiUrl(path: string): string {
+  // Strip any trailing slashes from the API_URL
+  const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+  
+  // Production environment (GitHub Pages)
+  if (import.meta.env.PROD) {
+    // Various path normalization logic to ensure correct URL construction
+    // ...
+  } else {
+    // Development environment - use relative paths
+    // ...
   }
-
-  // Use a different approach for GitHub Pages with basepath
-  return (
-    <div>
-      <Route path={`${BASE_URL}`} component={Home} />
-      <Route path={`${BASE_URL}documents`} component={Documents} />
-      <Route path={`${BASE_URL}preview/:id`} component={Preview} />
-      <Route path={`${BASE_URL}shared/:token`} component={SharedDocument} />
-      <Route path={`${BASE_URL}*`} component={NotFound} />
-    </div>
-  );
 }
 ```
 
-## How These Changes Work Together
+### 2. Config File Structure
 
-1. When the site is deployed to GitHub Pages, all routes are prefixed with '/samuelbabarere/'
-2. The 404.html file handles direct URL access by redirecting to the correct GitHub Pages base path
-3. All API requests use `getFullApiUrl()` which sends requests to the Koyeb backend
-4. Navigation buttons and links include the BASE_URL prefix for correct client-side routing
+We clarified the configuration in `client/src/config.ts`:
 
-These changes ensure seamless navigation and API communication between the GitHub Pages frontend and the Koyeb backend.
+- Added clear documentation on how API URLs are constructed
+- Removed ambiguous comments
+- Added explicit examples of URL formats
+- Added a note about not including `/api` in the base URL
+
+```javascript
+export const API_URL = import.meta.env.PROD 
+  ? 'https://efficient-freida-samuel-gfather-42709cdd.koyeb.app' 
+  : '/api';
+
+// IMPORTANT: The API_URL should NOT include '/api' at the end.
+// The queryClient.ts will automatically handle adding '/api' to the path as needed.
+```
+
+### 3. Enhanced Error Handling in PDF Viewer
+
+We significantly improved error handling in the PDF viewer component:
+
+- Added more detailed error messages
+- Categorized errors into different types (server, parsing, password, timeout, network)
+- Added specific troubleshooting recommendations for each error type
+- Enhanced decoding error detection
+- Added timeout handling to prevent infinite loading states
+
+### 4. Document Preview URL Fixes
+
+Fixed how document preview and download URLs are constructed:
+
+- Updated endpoints to use the pattern `/documents/:id/preview` instead of `/api/documents/:id/preview`
+- Let the URL construction utility handle adding the `/api` prefix
+- Added additional debugging information in network requests
+
+## How to Verify
+
+1. When the application is deployed to GitHub Pages, open the browser console
+2. Check network requests to confirm they're correctly formed with the Koyeb backend URL
+3. Verify document preview and download functionality works in production
+4. Test error scenarios to ensure helpful error messages appear
+
+## Future Maintenance
+
+When updating the Koyeb backend URL:
+
+1. Only change the base URL in `client/src/config.ts`
+2. Do not include `/api` in the URL you set
+3. The URL handling utility will automatically add the necessary path components

@@ -4,13 +4,14 @@
  */
 
 // The base API URL for production (deployed) environment
-// Make sure there's no trailing slash at the end of the URL
+// For GitHub Pages deployments connecting to Koyeb
 export const API_URL = import.meta.env.PROD 
   ? 'https://efficient-freida-samuel-gfather-42709cdd.koyeb.app' 
   : '/api';
 
-// For local/development, we keep '/api' which will use the proxy
-// This allows local development to continue working without changes
+// IMPORTANT: The API_URL should NOT include '/api' at the end.
+// The queryClient.ts will automatically handle adding '/api' to the path as needed.
+// This separation makes it easier to maintain and change the backend URL.
 
 // Set the base URL for routing 
 // In production with GitHub Pages, this will be '/samuelbabarere/'
@@ -20,11 +21,16 @@ export const BASE_URL = import.meta.env.PROD
   : '/';
 
 /**
- * IMPORTANT: When deploying to Koyeb, you'll get a new URL. 
- * Replace the URL above with your new Koyeb URL + '/api'
+ * URL Handling Rules:
  * 
- * Example:
- * export const API_URL = import.meta.env.PROD 
- *   ? 'https://your-new-app-name.koyeb.app/api' 
- *   : '/api';
+ * 1. Production (GitHub Pages):
+ *    - API requests: API_URL + '/api' + endpoint
+ *    - Example: https://efficient-freida-samuel-gfather-42709cdd.koyeb.app/api/documents
+ * 
+ * 2. Development (Local):
+ *    - API requests: '/api' + endpoint
+ *    - Example: /api/documents
+ * 
+ * If you change the Koyeb backend URL, update the API_URL value above.
+ * Do not include '/api' in the API_URL - it will be added automatically.
  */

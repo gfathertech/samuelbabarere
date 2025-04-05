@@ -14,46 +14,65 @@ async function throwIfResNotOk(res: Response) {
 export function getFullApiUrl(path: string): string {
   // For debugging
   console.log('getFullApiUrl input:', path);
+  console.log('Environment:', import.meta.env.PROD ? 'Production' : 'Development');
+  console.log('API_URL from config:', API_URL);
   
   // Already a full URL - return as is
   if (path.startsWith('http')) {
+    console.log('Full URL provided, returning as is:', path);
     return path;
   }
   
   // Handle production environment (GitHub Pages deployment)
   if (import.meta.env.PROD) {
-    // Use API_URL from config which should point to Koyeb backend
-    const koyebBaseUrl = API_URL.endsWith('/api') 
-      ? API_URL 
-      : `${API_URL}${API_URL.endsWith('/') ? '' : '/'}api`;
-      
-    // If path already includes /api, extract the actual endpoint path
-    if (path.startsWith('/api/')) {
-      const apiPath = path.substring(5); // Remove /api/ prefix (including the trailing slash)
-      const result = `${koyebBaseUrl}/${apiPath}`;
-      console.log('Production API URL (with /api/ in path):', result);
-      return result;
-    }
+    // Strip any trailing slashes from the API_URL
+    const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
     
-    // No /api prefix - normalize path and add to Koyeb URL
-    const normalizedPath = path.startsWith('/') ? path.substring(1) : path;
-    const result = `${koyebBaseUrl}/${normalizedPath}`;
-    console.log('Production API URL:', result);
-    return result;
+    // If path already includes /api, we need to handle it carefully
+    if (path.startsWith('/api/')) {
+      // The API_URL from config might already include /api
+      if (baseUrl.endsWith('/api')) {
+        // Remove /api from the path to avoid duplication
+        const apiPath = path.substring(4); // Remove /api prefix (keeping the slash)
+        const result = `${baseUrl}${apiPath}`;
+        console.log('Production URL (API_URL already has /api):', result);
+        return result;
+      } else {
+        // API_URL doesn't have /api, so we can use the path as is
+        const result = `${baseUrl}${path}`;
+        console.log('Production URL (adding path with /api):', result);
+        return result;
+      }
+    } else {
+      // No /api in path, check if we need to add it
+      if (baseUrl.endsWith('/api')) {
+        // API_URL already has /api, just add the endpoint
+        const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+        const result = `${baseUrl}${normalizedPath}`;
+        console.log('Production URL (appending to API_URL with /api):', result);
+        return result;
+      } else {
+        // Need to add /api to the URL
+        const normalizedPath = path.startsWith('/') ? path.substring(1) : path;
+        const result = `${baseUrl}/api/${normalizedPath}`;
+        console.log('Production URL (adding /api/ to path):', result);
+        return result;
+      }
+    }
   } 
   
   // Development environment - use relative paths
   else {
     // If path already includes /api, keep it as is
     if (path.startsWith('/api/')) {
-      console.log('Development API URL (with /api):', path);
+      console.log('Development URL (with /api):', path);
       return path;
     }
     
     // Add /api prefix for paths that don't have it
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
     const result = `/api${normalizedPath}`;
-    console.log('Development API URL:', result);
+    console.log('Development URL:', result);
     return result;
   }
 }

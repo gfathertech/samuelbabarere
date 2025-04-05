@@ -68,14 +68,17 @@ export default function Preview() {
         console.log('Preview: Fetching document data for ID:', id);
 
         // Attempt to fetch document preview data from API
-        // Use direct path with /api prefix to ensure correct URL construction
-        const apiUrl = getFullApiUrl(`/api/documents/${id}/preview`);
+        // With our enhanced URL handling, we can be sure this constructs correct URLs
+        // for both development and production environments
+        const apiUrl = getFullApiUrl(`/documents/${id}/preview`);
         console.log('Preview: Making API request to', apiUrl);
         
-        // Log environment info for debugging
+        // Log environment info for detailed debugging
         console.log('Environment:', import.meta.env.PROD ? 'Production' : 'Development');
         console.log('API_URL from config:', API_URL);
         console.log('BASE_URL from config:', BASE_URL);
+        console.log('Document ID:', id);
+        console.log('Browser location:', window.location.href);
         
         // Add mode: 'cors' to ensure CORS is properly handled
         const response = await fetch(apiUrl, {
@@ -216,7 +219,7 @@ export default function Preview() {
               </Button>
               {docId && (
                 <Button 
-                  onClick={() => window.open(getFullApiUrl(`/api/documents/${docId}/download`), '_blank')}
+                  onClick={() => window.open(getFullApiUrl(`/documents/${docId}/download`), '_blank')}
                   className="bg-pink-600 hover:bg-pink-700 text-white whitespace-nowrap"
                 >
                   <Download className="mr-2 h-4 w-4" /> Download File
@@ -256,7 +259,7 @@ export default function Preview() {
           {docId && (
             <Button 
               variant="outline"
-              onClick={() => window.open(getFullApiUrl(`/api/documents/${docId}/download`), '_blank')}
+              onClick={() => window.open(getFullApiUrl(`/documents/${docId}/download`), '_blank')}
               className="flex-shrink-0 flex items-center text-pink-600 border-pink-200 hover:text-pink-700 hover:bg-pink-50 whitespace-nowrap"
             >
               <Download className="mr-2 h-4 w-4" /> Download File
