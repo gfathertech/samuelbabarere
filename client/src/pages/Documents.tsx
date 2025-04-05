@@ -895,7 +895,7 @@ export default function Documents() {
                       {/* Only show preview for PDFs and images */}
                       {(doc.fileType === 'application/pdf' || doc.fileType.startsWith('image/')) && (
                         <Link
-                          href={`/preview/${doc._id}`}
+                          href={`${BASE_URL}preview/${doc._id}`}
                           className="text-blue-600 hover:text-blue-700 dark:text-purple-300 dark:hover:text-pink-300 transition-colors"
                           title="Preview document"
                         >
