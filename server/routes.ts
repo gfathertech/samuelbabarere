@@ -1,17 +1,42 @@
-import type { Express } from "express";
+import type { Express, NextFunction, Request, Response } from "express"; // Added NextFunction, Request, Response
 import { createServer, type Server } from "http";
+import logger from './logger'; // Import pino logger
 import { storage } from "./storage";
 import { z } from "zod";
 import nodemailer from 'nodemailer';
 import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
-import { Document } from "./schema"; // Import Document model for all-documents endpoint
+import { 
+  Document, 
+  adminLoginSchema, // Import adminLoginSchema
+  insertDocumentSchema, // Import insertDocumentSchema
+  documentIdParamsSchema, // Import documentIdParamsSchema
+  sharedTokenParamsSchema // Import sharedTokenParamsSchema
+} from "./schema"; // Import Document model for all-documents endpoint
 
+// Schemas defined in routes.ts
 const contactSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email format"),
   message: z.string().min(1, "Message is required"),
 });
+
+const getDocumentsQuerySchema = z.object({
+  user: z.string().optional(),
+});
+
+const migrateDocumentsBodySchema = z.object({
+  user: z.string().min(1, "User parameter is required"),
+});
+
+const transferDocumentsBodySchema = z.object({
+  user: z.string().min(1, "User parameter is required"),
+});
+
+const shareBodySchema = z.object({
+  expirationDays: z.number().int().min(1).max(30).optional(),
+});
+
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(cookieParser());
@@ -30,10 +55,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       mongodb: (mongoose.connection.readyState === 1) ? 'connected' : 'disconnected'
     });
   });
-  app.post("/api/contact", async (req, res) => {
+  app.post("/api/contact", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const data = contactSchema.parse(req.body);
-      console.log("Contact form submission:", data);
+      const body = contactSchema.parse(req.body);
+      logger.info({ contactData: body }, "Contact form submission");
 
       const transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -44,40 +69,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const mailOptions = {
-        from: data.email,
+        from: body.email,
         to: 'gfathertech@gmail.com',
-        subject: `Contact Form Message from ${data.name}`,
-        text: `Name: ${data.name}\nEmail: ${data.email}\nMessage: ${data.message}`
+        subject: `Contact Form Message from ${body.name}`,
+        text: `Name: ${body.name}\nEmail: ${body.email}\nMessage: ${body.message}`
       };
 
       await transporter.sendMail(mailOptions);
       res.json({ success: true });
-    } catch (error) {
-      console.error("Email sending error:", error);
-      res.status(400).json({
-        success: false,
-        message: "Failed to send email"
-      });
+    } catch (error: any) {
+      logger.error({ err: error }, "Email sending error");
+      if (error instanceof z.ZodError) {
+        error.status = 400;
+        error.message = "Invalid input: " + error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
+      } else {
+        error.status = 400; // Default status for other errors in this handler
+        // error.message remains as is or could be generic like "Failed to send email"
+      }
+      next(error);
     }
   });
 
   // Document management routes
-  app.post("/api/auth/verify", async (req, res) => {
+  app.post("/api/auth/verify", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      console.log("Verifying admin password...");
-      const { password } = req.body;
+      logger.info("Verifying admin password...");
+      const body = adminLoginSchema.parse(req.body);
 
-      if (!password) {
-        console.log("No password provided");
-        return res.status(400).json({ message: "Password is required" });
-      }
-
-      console.log("Checking password: ", password);
-      const isValid = await storage.verifyAdminPassword(password);
-      console.log("Password validation result:", isValid);
+      // Avoid logging password directly in production
+      // logger.info("Checking password: ", body.password); 
+      const isValid = await storage.verifyAdminPassword(body.password);
+      logger.info({ isValid }, "Password validation result");
 
       if (!isValid) {
-        return res.status(401).json({ message: "Invalid password" });
+        const err: any = new Error("Invalid password");
+        err.status = 401;
+        return next(err);
       }
       
       // Set auth cookie that expires in 30 minutes
@@ -91,18 +118,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.json({ success: true });
-    } catch (error) {
-      console.error("Authentication error:", error);
-      res.status(500).json({ message: "Authentication failed" });
+    } catch (error: any) {
+      logger.error({ err: error }, "Authentication error");
+      error.status = 500;
+      next(error);
     }
   });
 
-  app.get("/api/documents", async (req, res) => {
+  app.get("/api/documents", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const user = req.query.user as string | undefined;
-      console.log(`Fetching documents from MongoDB${user ? ` for user: ${user}` : ''}...`);
+      const query = getDocumentsQuerySchema.parse(req.query);
+      logger.info(`Fetching documents from MongoDB${query.user ? ` for user: ${query.user}` : ''}...`);
       // Get documents filtered by user if specified
-      const documents = await storage.getDocuments(user);
+      const documents = await storage.getDocuments(query.user);
 
       // Create a sanitized version of documents without the fileData field
       const sanitizedDocuments = documents.map(doc => ({
@@ -113,18 +141,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user: doc.user || 'MATTHEW' // Default to MATTHEW for backward compatibility
       }));
 
-      console.log(`Found ${documents.length} documents`);
+      logger.info(`Found ${documents.length} documents`);
       res.json(sanitizedDocuments);
-    } catch (error) {
-      console.error("Error fetching documents:", error);
-      res.status(500).json({ message: "Failed to fetch documents" });
+    } catch (error: any) {
+      logger.error({ err: error }, "Error fetching documents");
+      error.status = 500;
+      next(error);
     }
   });
   
   // TEMPORARY: Get all documents without user filtering (for debugging)
-  app.get("/api/all-documents", async (req, res) => {
+  app.get("/api/all-documents", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      console.log('Fetching ALL documents from MongoDB without user filtering...');
+      logger.info('Fetching ALL documents from MongoDB without user filtering...');
       // Use Mongoose's Document model directly (imported from schema)
       const documents = await Document.find({})
         .select({ fileData: 0 }) // Exclude the large fileData field
@@ -139,204 +168,145 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user: doc.user || 'NO USER FIELD'
       }));
 
-      console.log(`Found ${documents.length} total documents in MongoDB`);
+      logger.info(`Found ${documents.length} total documents in MongoDB`);
       res.json(sanitizedDocuments);
-    } catch (error) {
-      console.error("Error fetching all documents:", error);
-      res.status(500).json({ message: "Failed to fetch all documents" });
+    } catch (error: any) {
+      logger.error({ err: error }, "Error fetching all documents");
+      error.status = 500;
+      next(error);
     }
   });
   
   // TEMPORARY: Migrate documents without user field to set a default user
-  app.post("/api/migrate-documents", async (req, res) => {
+  app.post("/api/migrate-documents", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      console.log('Migrating documents in MongoDB to assign user field...');
-      const { user } = req.body;
-      
-      if (!user) {
-        return res.status(400).json({ message: "User parameter is required" });
-      }
+      logger.info('Migrating documents in MongoDB to assign user field...');
+      const body = migrateDocumentsBodySchema.parse(req.body);
       
       // Find all documents without a user field
       const result = await Document.updateMany(
         { user: { $exists: false } }, // Find documents where user field doesn't exist
-        { $set: { user } }             // Set the user field
+        { $set: { user: body.user } }             // Set the user field
       );
       
-      console.log(`Migration complete: ${result.modifiedCount} documents updated with user: ${user}`);
+      logger.info({ modifiedCount: result.modifiedCount, user: body.user }, `Migration complete`);
       res.json({
         success: true,
         modifiedCount: result.modifiedCount,
-        user
+        user: body.user
       });
-    } catch (error) {
-      console.error("Error migrating documents:", error);
-      res.status(500).json({ message: "Failed to migrate documents" });
+    } catch (error: any) {
+      logger.error({ err: error }, "Error migrating documents");
+      error.status = 500;
+      next(error);
     }
   });
   
   // TEMPORARY: Set all documents to a specific user (for transferring ownership)
-  app.post("/api/transfer-all-documents", async (req, res) => {
+  app.post("/api/transfer-all-documents", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      console.log('Transferring all documents to a new user...');
-      const { user } = req.body;
-      
-      if (!user) {
-        return res.status(400).json({ message: "User parameter is required" });
-      }
+      logger.info('Transferring all documents to a new user...');
+      const body = transferDocumentsBodySchema.parse(req.body);
       
       // Update all documents to the specified user
       const result = await Document.updateMany(
         {}, // Match all documents
-        { $set: { user } } // Set the user field to the new value
+        { $set: { user: body.user } } // Set the user field to the new value
       );
       
-      console.log(`Transfer complete: ${result.modifiedCount} documents updated with user: ${user}`);
+      logger.info({ modifiedCount: result.modifiedCount, user: body.user }, `Transfer complete`);
       res.json({
         success: true,
         modifiedCount: result.modifiedCount,
-        user
+        user: body.user
       });
-    } catch (error) {
-      console.error("Error transferring documents:", error);
-      res.status(500).json({ message: "Failed to transfer documents" });
+    } catch (error: any) {
+      logger.error({ err: error }, "Error transferring documents");
+      error.status = 500;
+      next(error);
     }
   });
 
   // New endpoint to download a specific document by ID
-  app.get("/api/documents/:id/download", async (req, res) => {
+  app.get("/api/documents/:id/download", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params.id;
-      console.log(`Downloading document ${id}`);
+      const params = documentIdParamsSchema.parse(req.params);
+      const id = params.id;
+      logger.info(`Downloading document ${id}`);
 
       const document = await storage.getDocumentById(id);
 
       if (!document) {
-        console.error(`Document ${id} not found for download`);
-        return res.status(404).json({ message: "Document not found" });
+        logger.error(`Document ${id} not found for download`);
+        const err: any = new Error("Document not found");
+        err.status = 404;
+        return next(err);
       }
 
       if (!document.fileData) {
-        console.error(`Document ${id} has no fileData field - this might be a selection issue`);
-        return res.status(500).json({ message: "Document data is missing" });
+        logger.error(`Document ${id} has no fileData field - this might be a selection issue`);
+        const err: any = new Error("Document data is missing");
+        err.status = 500;
+        return next(err);
       }
 
-      console.log(`Preparing to send document ${id} of type ${document.fileType}`);
+      logger.info(`Preparing to send document ${id} of type ${document.fileType}`);
 
       // Set appropriate headers for the download
       res.setHeader('Content-Type', document.fileType);
       res.setHeader('Content-Disposition', `attachment; filename="${document.name}"`);
       res.setHeader('Cache-Control', 'no-cache');
 
-      // Handle the document's fileData properly based on its type
-      try {
-        console.log(`FileData type: ${typeof document.fileData}, isBuffer: ${Buffer.isBuffer(document.fileData)}`);
-
-        // Check if it's a Buffer instance or Buffer-like object
-        if (Buffer.isBuffer(document.fileData)) {
-          console.log(`Document ${id} has fileData as direct Buffer of length: ${document.fileData.length}`);
-          return res.send(document.fileData);
-        }
-
-        // Handle MongoDB Buffer object (which may not be detected as Buffer by isBuffer)
-        else if (document.fileData && typeof document.fileData === 'object' && document.fileData.buffer && document.fileData.type === 'Buffer') {
-          console.log(`Document ${id} has fileData as MongoDB Buffer object`);
-          const buffer = Buffer.from(document.fileData.buffer);
-          console.log(`Successfully created buffer from MongoDB Buffer of length: ${buffer.length}`);
-          return res.send(buffer);
-        }
-
-        // Handle plain object with buffer property
-        else if (document.fileData && typeof document.fileData === 'object' && document.fileData.buffer) {
-          console.log(`Document ${id} has fileData with buffer property`);
-          const buffer = Buffer.from(document.fileData.buffer);
-          console.log(`Created buffer from object buffer property of length: ${buffer.length}`);
-          return res.send(buffer);
-        }
-
-        // Handle array/buffer data
-        else if (document.fileData && typeof document.fileData === 'object' && Array.isArray(document.fileData)) {
-          console.log(`Document ${id} has fileData as array`);
-          const buffer = Buffer.from(document.fileData);
-          console.log(`Created buffer from array data of length: ${buffer.length}`);
-          return res.send(buffer);
-        }
-
-        // If fileData is a string (from memory storage or older MongoDB format)
-        else if (typeof document.fileData === 'string') {
-          let fileData = document.fileData;
-
-          // Remove data URL prefix if present
-          if (fileData.includes('base64,')) {
-            const parts = fileData.split('base64,');
-            fileData = parts[1];
-            console.log(`Extracted base64 data from data URL`);
-          }
-
-          // Convert to buffer and send
-          const buffer = Buffer.from(fileData, 'base64');
-          console.log(`Successfully converted string data to buffer of length: ${buffer.length}`);
-          return res.send(buffer);
-        }
-
-        // Last resort - try to stringify and then convert back
-        else if (document.fileData) {
-          console.log(`Document ${id} has fileData in non-standard format, attempting conversion:`, typeof document.fileData);
-          try {
-            // Log the structure of the data for debugging
-            console.log("FileData structure:", JSON.stringify(document.fileData).substring(0, 100) + "...");
-
-            // Try to create buffer directly from the object
-            const buffer = Buffer.from(document.fileData);
-            console.log(`Created buffer directly from object of length: ${buffer.length}`);
-            return res.send(buffer);
-          } catch (err) {
-            console.error(`Failed to convert object to buffer:`, err);
-            return res.status(500).json({ message: "Could not convert document data format" });
-          }
-        }
-
-        // Unknown format or no data
-        else {
-          console.error(`Document ${id} has invalid fileData:`, document.fileData);
-          return res.status(500).json({ message: "Document data is missing or in an unprocessable format" });
-        }
-      } catch (bufferError) {
-        console.error(`Error processing document data:`, bufferError);
-        return res.status(500).json({ message: "Failed to process document data" });
+      // fileData should now be a Buffer or null due to normalization in storage.ts
+      if (!document.fileData || !(document.fileData instanceof Buffer)) {
+        logger.error(`Processed document data for ${id} is missing, not a Buffer, or normalization failed.`);
+        const err: any = new Error("Processed document data is unavailable or corrupted.");
+        err.status = 500;
+        return next(err);
       }
+      
+      logger.info(`Sending document ${id} with normalized fileData of length ${document.fileData.length}`);
+      res.send(document.fileData);
 
-    } catch (error) {
-      console.error("Error downloading document:", error);
-      res.status(500).json({ message: "Failed to download document" });
+    } catch (error: any) {
+      logger.error({ err: error }, "Error downloading document");
+      // If status is not already set by storage layer or previous logic, set a default
+      if (!error.status) error.status = 500;
+      next(error);
     }
   });
 
-  app.delete("/api/documents/:id", async (req, res) => {
+  app.delete("/api/documents/:id", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params.id;
-      console.log(`Request to delete document ${id}`);
+      const params = documentIdParamsSchema.parse(req.params);
+      const id = params.id;
+      logger.info(`Request to delete document ${id}`);
 
       const success = await storage.deleteDocument(id);
       if (!success) {
-        return res.status(404).json({ message: "Document not found" });
+        const err: any = new Error("Document not found");
+        err.status = 404;
+        return next(err);
       }
 
       res.json({ success: true });
-    } catch (error) {
-      console.error("Error deleting document:", error);
-      res.status(500).json({ message: "Failed to delete document" });
+    } catch (error: any) {
+      logger.error({ err: error }, "Error deleting document");
+      error.status = 500;
+      next(error);
     }
   });
   
   // Sharing functionality
-  app.post("/api/documents/:id/share", async (req, res) => {
+  app.post("/api/documents/:id/share", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params.id;
-      const { expirationDays } = req.body;
-      console.log(`Creating shareable link for document ${id} with expiration in ${expirationDays || 7} days`);
+      const params = documentIdParamsSchema.parse(req.params);
+      const body = shareBodySchema.parse(req.body);
+      const id = params.id;
       
-      const shareToken = await storage.createShareableLink(id, expirationDays);
+      logger.info(`Creating shareable link for document ${id} with expiration in ${body.expirationDays || 7} days`);
+      
+      const shareToken = await storage.createShareableLink(id, body.expirationDays);
       
       // Create the full shareable URL
       // Just return the share token without the full URL to let the frontend construct it with proper BASE_URL
@@ -346,47 +316,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true, 
         shareToken 
       });
-    } catch (error) {
-      console.error("Error creating shareable link:", error);
-      res.status(500).json({ message: "Failed to create shareable link" });
+    } catch (error: any) {
+      logger.error({ err: error }, "Error creating shareable link");
+      error.status = 500;
+      next(error);
     }
   });
   
-  app.delete("/api/documents/:id/share", async (req, res) => {
+  app.delete("/api/documents/:id/share", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params.id;
-      console.log(`Disabling sharing for document ${id}`);
+      const params = documentIdParamsSchema.parse(req.params);
+      const id = params.id;
+      logger.info(`Disabling sharing for document ${id}`);
       
       const success = await storage.disableSharing(id);
       if (!success) {
-        return res.status(404).json({ message: "Document not found" });
+        const err: any = new Error("Document not found");
+        err.status = 404;
+        return next(err);
       }
       
       res.json({ success: true });
-    } catch (error) {
-      console.error("Error disabling sharing:", error);
-      res.status(500).json({ message: "Failed to disable sharing" });
+    } catch (error: any) {
+      logger.error({ err: error }, "Error disabling sharing");
+      error.status = 500;
+      next(error);
     }
   });
   
-  app.get("/api/shared/:token", async (req, res) => {
+  app.get("/api/shared/:token", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const token = req.params.token;
-      console.log(`Fetching shared document with token: ${token}`);
-      
-      if (!token || token.length < 10) {
-        console.log(`Invalid share token format: ${token}`);
-        return res.status(400).json({ message: "Invalid share token format" });
-      }
+      const params = sharedTokenParamsSchema.parse(req.params);
+      const token = params.token;
+      logger.info(`Fetching shared document with token: ${token}`);
       
       const document = await storage.getDocumentByShareToken(token);
       
       if (!document) {
-        console.log(`No valid document found for share token: ${token}`);
-        return res.status(404).json({ message: "Shared document not found or link has expired" });
+        logger.warn(`No valid document found for share token: ${token}`);
+        const err: any = new Error("Shared document not found or link has expired");
+        err.status = 404;
+        return next(err);
       }
       
-      console.log(`Found shared document: ${document._id}, expires: ${document.shareExpiration}`);
+      logger.info(`Found shared document: ${document._id}, expires: ${document.shareExpiration}`);
       
       // If direct browser access, we won't force a client redirect
       // The browser will be directed via GitHub Pages routing
@@ -396,23 +369,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Convert document data to base64 data URL
-      const getDataUrl = (fileData: any): string => {
-        if (Buffer.isBuffer(fileData)) {
-          return `data:${document.fileType};base64,${fileData.toString('base64')}`;
+      const getDataUrl = (fileBuffer: Buffer | null | undefined, fileType: string): string => {
+        if (!fileBuffer || !(fileBuffer instanceof Buffer)) {
+          logger.warn({ fileType, hasFileData: !!fileBuffer }, "Cannot generate data URL from invalid or missing file buffer");
+          return ''; 
         }
-        if (fileData.buffer) {
-          return `data:${document.fileType};base64,${Buffer.from(fileData.buffer).toString('base64')}`;
-        }
-        if (typeof fileData === 'string') {
-          return fileData.startsWith('data:') ? fileData : `data:${document.fileType};base64,${fileData}`;
-        }
-        return '';
+        return `data:${fileType};base64,${fileBuffer.toString('base64')}`;
       };
       
-      const content = getDataUrl(document.fileData);
+      const content = getDataUrl(document.fileData, document.fileType);
       
       if (!content) {
-        console.error(`Failed to generate content for shared document: ${document._id}`);
+        // This condition is now more critical as it implies fileData was null/invalid after normalization
+        logger.error(`Failed to generate content for shared document ${document._id} because fileData was invalid or missing post-normalization.`);
+        // Potentially send an error response or ensure previewAvailable handles this
       }
       
       // Return document data with preview content
@@ -427,28 +397,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user: document.user || 'SHARED', // Mark as shared document
         expiresAt: document.shareExpiration
       });
-    } catch (error) {
-      console.error("Error fetching shared document:", error);
-      res.status(500).json({ message: "Failed to fetch shared document" });
+    } catch (error: any) {
+      logger.error({ err: error }, "Error fetching shared document");
+      error.status = 500;
+      next(error);
     }
   });
 
   // Preview endpoint handler
-  app.get("/api/documents/:id/preview", async (req, res) => {
+  app.get("/api/documents/:id/preview", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params.id;
-      console.log(`Generating preview for document ${id}`);
+      const params = documentIdParamsSchema.parse(req.params);
+      const id = params.id;
+      logger.info(`Generating preview for document ${id}`);
 
       const document = await storage.getDocumentById(id);
 
       if (!document) {
-        console.error(`Document ${id} not found for preview`);
-        return res.status(404).json({ message: "Document not found" });
+        logger.error(`Document ${id} not found for preview`);
+        const err: any = new Error("Document not found");
+        err.status = 404;
+        return next(err);
       }
 
       if (!document.fileData) {
-        console.error(`Document ${id} has no fileData field`);
-        return res.status(500).json({ message: "Document data is missing" });
+        logger.error(`Document ${id} has no fileData field`);
+        const err: any = new Error("Document data is missing");
+        err.status = 500;
+        return next(err);
       }
 
       // If direct browser access, we won't force a client redirect
@@ -459,20 +435,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Convert document data to base64 data URL
-      const getDataUrl = (fileData: any): string => {
-        if (Buffer.isBuffer(fileData)) {
-          return `data:${document.fileType};base64,${fileData.toString('base64')}`;
+      // This function is now identical to the one in /api/shared/:token, consider moving to a shared utility if more uses arise
+      const getDataUrl = (fileBuffer: Buffer | null | undefined, fileType: string): string => {
+        if (!fileBuffer || !(fileBuffer instanceof Buffer)) {
+          logger.warn({ fileType, hasFileData: !!fileBuffer }, "Cannot generate data URL from invalid or missing file buffer for preview");
+          return ''; 
         }
-        if (fileData.buffer) {
-          return `data:${document.fileType};base64,${Buffer.from(fileData.buffer).toString('base64')}`;
-        }
-        if (typeof fileData === 'string') {
-          return fileData.startsWith('data:') ? fileData : `data:${document.fileType};base64,${fileData}`;
-        }
-        return '';
+        return `data:${fileType};base64,${fileBuffer.toString('base64')}`;
       };
 
-      const content = getDataUrl(document.fileData);
+      const content = getDataUrl(document.fileData, document.fileType);
+      
+      if (!content && document.fileData) { // Log if fileData was present but still failed (should be rare now)
+          logger.error(`Failed to generate preview content for document ${id} despite fileData being present post-normalization.`);
+      }
       
       res.json({
         type: document.fileType,
@@ -482,18 +458,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user: document.user || 'MATTHEW' // Default to MATTHEW for backward compatibility
       });
 
-    } catch (error) {
-      console.error("Error generating document preview:", error);
-      res.status(500).json({ message: "Failed to generate document preview" });
+    } catch (error: any) {
+      logger.error({ err: error }, "Error generating document preview");
+      error.status = 500;
+      next(error);
     }
   });
 
-  app.post("/api/documents", async (req, res) => {
+  app.post("/api/documents", async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const body = insertDocumentSchema.parse(req.body);
       // Only log the document name, not the entire body with file data
-      console.log("Creating new document:", req.body.name);
+      logger.info("Creating new document:", body.name);
 
-      const document = await storage.createDocument(req.body);
+      const document = await storage.createDocument(body);
 
       // Return document without the large fileData field
       const sanitizedResponse = {
@@ -504,11 +482,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user: document.user || 'MATTHEW' // Default to MATTHEW for backward compatibility
       };
 
-      console.log("Document created successfully:", sanitizedResponse);
+      logger.info({ document: sanitizedResponse }, "Document created successfully");
       res.json(sanitizedResponse);
-    } catch (error) {
-      console.error("Error creating document:", error);
-      res.status(500).json({ message: "Failed to create document" });
+    } catch (error: any) {
+      logger.error({ err: error }, "Error creating document");
+      if (error instanceof z.ZodError) {
+        error.status = 400;
+        error.message = "Invalid input: " + error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
+      } else {
+        error.status = 500;
+      }
+      next(error);
     }
   });
 

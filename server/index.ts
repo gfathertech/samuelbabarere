@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { setupVite, serveStatic } from "./vite"; // Removed log import
+import logger from './logger'; // Import pino logger
 import dotenv from 'dotenv';
 import cors from 'cors';
 
@@ -11,14 +12,45 @@ dotenv.config();
 import "./db";
 
 const app = express();
-// Set up CORS to allow requests from GitHub Pages
+
+// Define CORS origins based on environment
+const productionOrigins = [
+  'https://samuelbabarere.github.io', 
+  'https://portfolio.samuelbabarere.net'
+];
+const developmentOrigins = [
+  'https://samuelbabarere.github.io', 
+  'https://portfolio.samuelbabarere.net',
+  'http://localhost:5000', 
+  'http://localhost:3000',
+  'http://127.0.0.1:5000',
+  'http://127.0.0.1:3000'
+];
+
+const allowedOrigins = process.env.NODE_ENV === 'production' 
+  ? productionOrigins 
+  : developmentOrigins;
+
+// Log the CORS configuration being used
+logger.info(
+  { 
+    allowedOrigins, 
+    environment: process.env.NODE_ENV || 'development' 
+  }, 
+  "CORS configured with allowed origins"
+);
+
+// Set up CORS
 app.use(cors({
-  origin: [
-    'https://samuelbabarere.github.io', 
-    'https://portfolio.samuelbabarere.net',
-    'http://localhost:5000', 
-    'http://localhost:3000'
-  ],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -42,16 +74,22 @@ app.use((req, res, next) => {
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      const logData: any = {
+        method: req.method,
+        path,
+        status: res.statusCode,
+        durationMs: duration,
+      };
       if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        // Only include response if it's not excessively large, or summarize it
+        const responseStr = JSON.stringify(capturedJsonResponse);
+        if (responseStr.length < 1000) { // Example limit
+          logData.response = capturedJsonResponse;
+        } else {
+          logData.responsePreview = responseStr.substring(0, 100) + "...";
+        }
       }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
+      logger.info(logData, `${req.method} ${path} ${res.statusCode} - ${duration}ms`);
     }
   });
 
@@ -61,12 +99,19 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
+    // Log the error details
+    logger.error({
+      err, // pino will automatically handle error serialization including stack
+      method: req.method,
+      path: req.path,
+      status, // include status in the log object
+    }, `Error during ${req.method} ${req.path}: ${message}`);
+
+    res.status(status).json({ status, message });
   });
 
   // importantly only setup vite in development and after
@@ -87,6 +132,6 @@ app.use((req, res, next) => {
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    logger.info(`Server listening on port ${port}`);
   });
 })();

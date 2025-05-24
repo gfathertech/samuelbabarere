@@ -91,4 +91,14 @@ export const validateShareTokenSchema = z.object({
   token: z.string().min(1, "Share token is required"),
 });
 
+// Schema for validating MongoDB ObjectId in route parameters
+export const documentIdParamsSchema = z.object({
+  id: z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid Object ID format"),
+});
+
+// Schema for validating share token in route parameters
+export const sharedTokenParamsSchema = z.object({
+  token: z.string().min(1, "Token parameter is required"),
+});
+
 export type ShareDocument = z.infer<typeof shareDocumentSchema>;
